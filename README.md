@@ -1,4 +1,4 @@
-# Playlist Vote
+# SHITiest MUSIC
 
 A "best of" vote for the group playlist. Everyone goes through every song from the two old playlists (654 unique songs, 6 appear in both), listens to a snippet, and votes **👍 up, 👎 down, ⭐ super (15 each) or skip**. When voting closes you set a cut-off, copy the winners, and build the new playlist. There are stats and a Wrapped-style breakdown ("you downvoted X but everyone else loves them", "you were the only one who liked this", pickiest voter, and so on).
 
