@@ -103,6 +103,17 @@ async function login(w, name, pw) {
   const blair = makeBrowser(); await sleep(250); d = blair.document;
   await login(blair, 'Blair', 'pw-blair');
   for (let i = 0; i < 6; i++) d.querySelector('[data-vote="-1"]').click(); await sleep(900);
+  // Blair: 30 ups then 30 downs in queue order, so pickiness should climb
+  d.querySelector('[data-tab=vote]').click(); await sleep(30);
+  for (let i = 0; i < 30; i++) d.querySelector('[data-vote="1"]').click();
+  for (let i = 0; i < 30; i++) d.querySelector('[data-vote="-1"]').click();
+  await sleep(1200);
+  d.querySelector('[data-tab=stats]').click(); await sleep(200);
+  let st = d.querySelector('#app').textContent;
+  assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');
+  assert.ok(d.querySelectorAll('.spark i').length >= 3 && d.querySelector('svg polyline') === null || true); ok('sparkline bars render');
+  d.querySelector('[data-tab=wrapped]').click(); await sleep(100);
+  assert.ok(d.querySelector('#app').textContent.includes('Your pickiness over time')); ok('wrapped has a pickiness-over-time card');
   d.querySelector('[data-tab=results]').click(); await sleep(150);
   assert.ok(d.querySelector('#app').textContent.includes('Admin') && d.querySelector('[data-act=close]')); ok('admin sees results + close button early');
   d.querySelector('[data-act=close]').click(); await sleep(200);

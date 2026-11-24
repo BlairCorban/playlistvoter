@@ -64,6 +64,9 @@ th,td{padding:6px 6px;border-top:1px solid var(--line);text-align:left;vertical-
 .story h2{margin:6px 0 8px;font-size:22px}
 .story p{margin:6px 0;font-size:16px}
 .story .song{display:block;margin:4px 0;padding:6px 10px;background:rgba(255,255,255,.07);border-radius:8px;font-size:14px}
+.spark{display:flex;align-items:flex-end;gap:2px;height:44px;min-width:140px}
+.spark i{flex:1;background:var(--down);min-height:2px;border-radius:2px 2px 0 0;opacity:.9}
+.up2{color:var(--down)}.dn2{color:var(--up)}
 .login{max-width:380px;margin:30px auto}
 .login select,.login input{width:100%;margin-bottom:10px}
 @media (max-width:520px){.vbtns{grid-template-columns:repeat(2,1fr)}}
@@ -158,7 +161,7 @@ async function loadVotes(){
 /* ---------- voters for stats ---------- */
 function voters(){
   if(testMode){
-    return [{name:me.name+' (test)',v:testMine},...fakes].filter(x=>Object.keys(x.v).length);
+    return [{name:me.name+' (test)',v:testMine,seed:me.name.toLowerCase()},...fakes].filter(x=>Object.keys(x.v).length);
   }
   if(!allVotes)return [];
   const list=allVotes.map(x=>x.name===me.name?{name:x.name,v:mine}:x);
@@ -310,6 +313,60 @@ function agreement(vs){
   }
   return pairs.sort((x,y)=>y.pct-x.pct);
 }
+/* ---------- pickiness over time ---------- */
+const CHUNK=20;
+const _ord={};
+function ordCached(seed){return _ord[seed]||(_ord[seed]=orderFor(seed))}
+/* A voter's votes in the order they were shown to them (their queue is fixed), cut into chunks of ~20. */
+function pickSeries(p){
+  const seq=[];
+  for(const id of ordCached(p.seed||p.name.toLowerCase()))if(id in p.v)seq.push(p.v[id]);
+  const rate=c=>{const cast=c.filter(x=>x!==0).length;return cast?c.filter(x=>x===-1).length/cast:null};
+  const chunks=[];
+  for(let i=0;i<seq.length;i+=CHUNK){
+    const c=seq.slice(i,i+CHUNK);
+    if(c.length<CHUNK/2&&chunks.length)break;
+    chunks.push({n:i+c.length,down:rate(c)});
+  }
+  const th=Math.floor(seq.length/3);
+  return {chunks,n:seq.length,first:th>=10?rate(seq.slice(0,th)):null,last:th>=10?rate(seq.slice(seq.length-th)):null};
+}
+function sparkHtml(s){
+  return `<div class="spark">${s.chunks.map(c=>`<i style="height:${Math.max(2,Math.round((c.down||0)*100))}%" title="After ${c.n} songs: ${c.down===null?'all skips':Math.round(c.down*100)+'% downvotes'}"></i>`).join('')}</div>`;
+}
+function trendText(s){
+  if(s.first===null||s.last===null)return '';
+  const d=Math.round((s.last-s.first)*100);
+  const lead=`${Math.round(s.first*100)}% down at the start, ${Math.round(s.last*100)}% at the end`;
+  if(d>=8)return `${lead}. <span class="up2">Got pickier (+${d} pts)</span>`;
+  if(d<=-8)return `${lead}. <span class="dn2">Mellowed out (${d} pts)</span>`;
+  return `${lead}. Stayed pretty steady`;
+}
+function groupLine(all){
+  const maxK=Math.max(...all.map(s=>s.chunks.length),0);
+  const pts=[];
+  for(let k=0;k<maxK;k++){
+    const v=all.map(s=>s.chunks[k]&&s.chunks[k].down).filter(x=>x!==null&&x!==undefined);
+    if(v.length>=Math.min(2,all.length))pts.push({k,n:(k+1)*CHUNK,y:v.reduce((a,b)=>a+b,0)/v.length});
+  }
+  if(pts.length<2)return '';
+  const W=600,H=190,L=38,B=26,T=10,R=10,ymax=Math.max(0.2,Math.ceil(Math.max(...pts.map(p=>p.y))*10)/10);
+  const x=p=>L+(W-L-R)*(p.k/(Math.max(maxK,2)-1)),y=v=>T+(H-T-B)*(1-v/ymax);
+  const line=pts.map(p=>`${x(p).toFixed(1)},${y(p.y).toFixed(1)}`).join(' ');
+  const yt=[0,ymax/2,ymax].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#2a2f3a"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#9aa3b2">${Math.round(v*100)}%</text>`).join('');
+  const xt=pts.filter((p,i)=>i%Math.ceil(pts.length/8)===0).map(p=>`<text x="${x(p)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#9aa3b2">${p.n}</text>`).join('');
+  const dots=pts.map(p=>`<circle cx="${x(p)}" cy="${y(p.y)}" r="3.5" fill="#7c9cff"><title>After ${p.n} songs: ${Math.round(p.y*100)}% downvotes (average of everyone)</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Average downvote rate by number of songs voted on">${yt}${xt}<polyline points="${line}" fill="none" stroke="#7c9cff" stroke-width="2.5"/>${dots}</svg><div class="mut">Songs voted on so far (x) against the share of non-skip votes that were downvotes (y), averaged across everyone.</div>`;
+}
+function pickinessCard(vs){
+  const rows=vs.map(p=>({p,s:pickSeries(p)}));
+  const shown=rows.filter(r=>r.s.chunks.length>=2);
+  if(!shown.length)return `<div class="card"><h3>Pickiness over time</h3><div class="mut">Needs at least 20 votes from someone.</div></div>`;
+  return `<div class="card"><h3>Pickiness over time</h3>
+   <div class="mut">Everyone sees the songs in their own random order, so this follows each person through their list in blocks of ${CHUNK} songs. A taller bar means more downvotes in that block.</div>
+   <div style="margin:10px 0">${groupLine(shown.map(r=>r.s))}</div>
+   ${shown.map(r=>`<div class="row"><div style="width:90px">${esc(r.p.name)}</div>${sparkHtml(r.s)}<div class="mut" style="flex:1">${trendText(r.s)}</div></div>`).join('')}</div>`;
+}
 function renderStats(){
   const vs=voters();
   if(!vs.length){$('#app').innerHTML='<div class="card">No votes yet. Stats appear once people start voting.</div>';return}
@@ -345,6 +402,7 @@ function renderStats(){
    <table><tr><th>Name</th><th>Done</th><th>Mix</th><th>Down rate</th><th>⭐ used</th></tr>
    ${ps.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.total}/${SONGS.length}</td><td>${mixBar(x.p)}</td><td>${Math.round(x.downRate*100)}%</td><td>${x.sup}/${SUPER_LIMIT}</td></tr>`).join('')}</table>
    <div class="mut" style="margin-top:6px">Mix bar: gold = super, green = up, grey = skip, red = down. Down rate ignores skips.</div></div>
+  ${pickinessCard(vs)}
   ${pairs.length?`<div class="card"><h3>Taste twins and opposites</h3><div class="mut">How often two people vote the same way, on songs they both voted on (up and super count as the same).</div>
    <div style="margin-top:8px"><b>Most alike</b></div>${pairs.slice(0,3).map(x=>`<div class="row"><div class="t">${esc(x.a.name)} + ${esc(x.b.name)}</div><b>${Math.round(x.pct*100)}%</b><span class="mut">${x.n} songs</span></div>`).join('')}
    <div style="margin-top:8px"><b>Least alike</b></div>${pairs.slice(-3).reverse().map(x=>`<div class="row"><div class="t">${esc(x.a.name)} + ${esc(x.b.name)}</div><b>${Math.round(x.pct*100)}%</b><span class="mut">${x.n} songs</span></div>`).join('')}</div>`:''}
@@ -398,6 +456,9 @@ function wrappedFor(vs,p,ps,pairs){
   const rk=byDown.indexOf(me_)+1;
   let label=rk===1?'the pickiest voter in the group':rk===ps.length?'the most generous voter in the group':`#${rk} of ${ps.length} for pickiness`;
   cards.push({em:'🎚️',title:'Your voting style',body:`<p>You downvoted ${Math.round(me_.downRate*100)}% of the songs you voted on. That makes you ${label}.</p><p class="mut">${me_.skips} skips · ${me_.sup} super upvotes${bySkip[0]===me_&&me_.skips>0?' · most skips in the group':''}</p>`});
+  /* pickiness over time */
+  const sr=pickSeries(p);
+  if(sr.chunks.length>=2)cards.push({em:'📈',title:'Your pickiness over time',body:`<p>${trendText(sr)}.</p>${sparkHtml(sr)}<p class="mut">Each bar is a block of ${CHUNK} songs in the order you voted. Taller = more downvotes.</p>`});
   /* twin */
   const mine_=pairs.filter(x=>x.a===p||x.b===p);
   if(mine_.length){const t=mine_[0],o=mine_[mine_.length-1];const nm=x=>(x.a===p?x.b:x.a).name;
@@ -424,6 +485,12 @@ function groupAwards(vs,ps,pairs){
     if(wolf.lone>0)cards.push({em:'🐺',title:'Lone wolf',body:`<p><b>${esc(wolf.p.name)}</b> liked ${wolf.lone} song${wolf.lone===1?'':'s'} that every other voter rejected.</p>`});
     cards.push({em:'🔥',title:'Most contrarian',body:`<p><b>${esc(con.p.name)}</b> voted against the group's mood the most.</p>`});
     cards.push({em:'🐑',title:'Most in tune with the group',body:`<p><b>${esc(yes.p.name)}</b> voted closest to everyone else's average.</p>`});
+  }
+  const trend=vs.map(p=>({p,s:pickSeries(p)})).filter(r=>r.s.first!==null&&r.s.last!==null).map(r=>({p:r.p,d:r.s.last-r.s.first}));
+  if(trend.length>1){
+    const up=[...trend].sort((a,b)=>b.d-a.d)[0],dn=[...trend].sort((a,b)=>a.d-b.d)[0];
+    if(up.d>=0.05)cards.push({em:'😮‍💨',title:'Got the most worn down',body:`<p><b>${esc(up.p.name)}</b> got pickier as the list went on (+${Math.round(up.d*100)} points of downvotes from start to finish).</p>`});
+    if(dn.d<=-0.05)cards.push({em:'😌',title:'Mellowed out the most',body:`<p><b>${esc(dn.p.name)}</b> got more forgiving as they went (${Math.round(dn.d*100)} points of downvotes).</p>`});
   }
   if(pairs.length){const t=pairs[0],o=pairs[pairs.length-1];cards.push({em:'💞',title:'Closest pair',body:`<p><b>${esc(t.a.name)}</b> and <b>${esc(t.b.name)}</b> voted the same way ${Math.round(t.pct*100)}% of the time.</p>`});cards.push({em:'⚡',title:'Furthest apart',body:`<p><b>${esc(o.a.name)}</b> and <b>${esc(o.b.name)}</b> agreed only ${Math.round(o.pct*100)}% of the time.</p>`})}
   return cards;
@@ -455,10 +522,11 @@ function makeFakes(){
   const nm=['Fake Sam','Fake Alex','Fake Kai','Fake Rua','Fake Lee'];
   fakes=nm.map(n=>{
     const v={};let sup=0;const bias={};
+    const drift=(r()-0.4)*0.8,pos=new Map(orderFor(n.toLowerCase()).map((id,i)=>[id,i]));
     for(const s of SONGS){
       if(r()<0.15)continue;
       const a=ART[s[0]];if(!(a in bias))bias[a]=(r()-0.5)*1.2;
-      const x=q[s[0]]+bias[a]+(r()-0.5)*0.5;
+      const x=q[s[0]]+bias[a]+(r()-0.5)*0.5-drift*(pos.get(s[0])/SONGS.length);
       v[s[0]]=x>1.0&&sup<SUPER_LIMIT&&r()<0.4?(sup++,2):x>0.62?1:x<0.4?-1:(r()<0.5?0:-1);
     }
     return {name:n,v};
