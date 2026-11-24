@@ -318,18 +318,31 @@ const CHUNK=20;
 const _ord={};
 function ordCached(seed){return _ord[seed]||(_ord[seed]=orderFor(seed))}
 /* A voter's votes in the order they were shown to them (their queue is fixed), cut into chunks of ~20. */
-function pickSeries(p){
-  const seq=[];
-  for(const id of ordCached(p.seed||p.name.toLowerCase()))if(id in p.v)seq.push(p.v[id]);
-  const rate=c=>{const cast=c.filter(x=>x!==0).length;return cast?c.filter(x=>x===-1).length/cast:null};
+function pickSeries(p,vs){
+  /* Adjusted for song quality: each song is compared with how the OTHER voters treated it,
+     so a run of terrible songs doesn't look like the person got pickier. */
+  const others=(vs||[]).filter(o=>o!==p&&o.name!==p.name);
+  const exp=id=>{let d=0,c=0;for(const o of others){const x=o.v[id];if(x===undefined||x===0)continue;c++;if(x===-1)d++}return c>=3?d/c:null};
+  const items=[];
+  for(const id of ordCached(p.seed||p.name.toLowerCase()))if(id in p.v&&p.v[id]!==0)items.push({down:p.v[id]===-1?1:0,e:exp(id)});
+  const total=items.length?items.reduce((a,b)=>a+b.down,0)/items.length:0;
+  /* rate of a slice, minus what the others' votes predicted for those same songs, centred on the person's own average */
+  const adj=c=>{
+    if(!c.length)return null;
+    const a=c.reduce((x,y)=>x+y.down,0)/c.length;
+    const ex=c.filter(y=>y.e!==null);
+    if(ex.length<c.length/2)return a;
+    const m=ex.reduce((x,y)=>x+y.e,0)/ex.length;
+    return Math.min(1,Math.max(0,total+(a-m)));
+  };
   const chunks=[];
-  for(let i=0;i<seq.length;i+=CHUNK){
-    const c=seq.slice(i,i+CHUNK);
+  for(let i=0;i<items.length;i+=CHUNK){
+    const c=items.slice(i,i+CHUNK);
     if(c.length<CHUNK/2&&chunks.length)break;
-    chunks.push({n:i+c.length,down:rate(c)});
+    chunks.push({n:i+c.length,down:adj(c)});
   }
-  const th=Math.floor(seq.length/3);
-  return {chunks,n:seq.length,first:th>=10?rate(seq.slice(0,th)):null,last:th>=10?rate(seq.slice(seq.length-th)):null};
+  const th=Math.floor(items.length/3);
+  return {chunks,n:items.length,first:th>=10?adj(items.slice(0,th)):null,last:th>=10?adj(items.slice(items.length-th)):null};
 }
 function sparkHtml(s){
   return `<div class="spark">${s.chunks.map(c=>`<i style="height:${Math.max(2,Math.round((c.down||0)*100))}%" title="After ${c.n} songs: ${c.down===null?'all skips':Math.round(c.down*100)+'% downvotes'}"></i>`).join('')}</div>`;
@@ -359,11 +372,11 @@ function groupLine(all){
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Average downvote rate by number of songs voted on">${yt}${xt}<polyline points="${line}" fill="none" stroke="#7c9cff" stroke-width="2.5"/>${dots}</svg><div class="mut">Songs voted on so far (x) against the share of non-skip votes that were downvotes (y), averaged across everyone.</div>`;
 }
 function pickinessCard(vs){
-  const rows=vs.map(p=>({p,s:pickSeries(p)}));
+  const rows=vs.map(p=>({p,s:pickSeries(p,vs)}));
   const shown=rows.filter(r=>r.s.chunks.length>=2);
   if(!shown.length)return `<div class="card"><h3>Pickiness over time</h3><div class="mut">Needs at least 20 votes from someone.</div></div>`;
   return `<div class="card"><h3>Pickiness over time</h3>
-   <div class="mut">Everyone sees the songs in their own random order, so this follows each person through their list in blocks of ${CHUNK} songs. A taller bar means more downvotes in that block.</div>
+   <div class="mut">Everyone sees the songs in their own random order, so this follows each person through their list in blocks of ${CHUNK} songs. A taller bar means more downvotes than usual for that person, after allowing for how everyone else voted on the same songs, so a rough patch of songs doesn't count.</div>
    <div style="margin:10px 0">${groupLine(shown.map(r=>r.s))}</div>
    ${shown.map(r=>`<div class="row"><div style="width:90px">${esc(r.p.name)}</div>${sparkHtml(r.s)}<div class="mut" style="flex:1">${trendText(r.s)}</div></div>`).join('')}</div>`;
 }
@@ -457,8 +470,8 @@ function wrappedFor(vs,p,ps,pairs){
   let label=rk===1?'the pickiest voter in the group':rk===ps.length?'the most generous voter in the group':`#${rk} of ${ps.length} for pickiness`;
   cards.push({em:'🎚️',title:'Your voting style',body:`<p>You downvoted ${Math.round(me_.downRate*100)}% of the songs you voted on. That makes you ${label}.</p><p class="mut">${me_.skips} skips · ${me_.sup} super upvotes${bySkip[0]===me_&&me_.skips>0?' · most skips in the group':''}</p>`});
   /* pickiness over time */
-  const sr=pickSeries(p);
-  if(sr.chunks.length>=2)cards.push({em:'📈',title:'Your pickiness over time',body:`<p>${trendText(sr)}.</p>${sparkHtml(sr)}<p class="mut">Each bar is a block of ${CHUNK} songs in the order you voted. Taller = more downvotes.</p>`});
+  const sr=pickSeries(p,vs);
+  if(sr.chunks.length>=2)cards.push({em:'📈',title:'Your pickiness over time',body:`<p>${trendText(sr)}.</p>${sparkHtml(sr)}<p class="mut">Each bar is a block of ${CHUNK} songs in the order you voted. Taller = pickier, adjusted for how good or bad the songs were.</p>`});
   /* twin */
   const mine_=pairs.filter(x=>x.a===p||x.b===p);
   if(mine_.length){const t=mine_[0],o=mine_[mine_.length-1];const nm=x=>(x.a===p?x.b:x.a).name;
@@ -486,7 +499,7 @@ function groupAwards(vs,ps,pairs){
     cards.push({em:'🔥',title:'Most contrarian',body:`<p><b>${esc(con.p.name)}</b> voted against the group's mood the most.</p>`});
     cards.push({em:'🐑',title:'Most in tune with the group',body:`<p><b>${esc(yes.p.name)}</b> voted closest to everyone else's average.</p>`});
   }
-  const trend=vs.map(p=>({p,s:pickSeries(p)})).filter(r=>r.s.first!==null&&r.s.last!==null).map(r=>({p:r.p,d:r.s.last-r.s.first}));
+  const trend=vs.map(p=>({p,s:pickSeries(p,vs)})).filter(r=>r.s.first!==null&&r.s.last!==null).map(r=>({p:r.p,d:r.s.last-r.s.first}));
   if(trend.length>1){
     const up=[...trend].sort((a,b)=>b.d-a.d)[0],dn=[...trend].sort((a,b)=>a.d-b.d)[0];
     if(up.d>=0.05)cards.push({em:'😮‍💨',title:'Got the most worn down',body:`<p><b>${esc(up.p.name)}</b> got pickier as the list went on (+${Math.round(up.d*100)} points of downvotes from start to finish).</p>`});
