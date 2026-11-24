@@ -248,11 +248,12 @@ function renderMine(){
   const ids=Object.keys(m).filter(id=>BYID.has(id)&&fm[filt](m[id]));
   const counts=c=>Object.values(m).filter(fm[c]).length;
   let h=`<div class="card"><div class="seg"><span class="mut">Show:</span>${['all','super','up','down','skip'].map(f=>`<button class="btn" data-filt="${f}" style="${filt===f?'border-color:var(--accent)':''}">${f} (${counts(f)})</button>`).join('')}</div>
-  <div class="mut" style="margin-bottom:8px">⭐ ${left} super upvote${left===1?'':'s'} left. ${open?'Tap a button to change a vote.':'Voting is closed.'}</div>`;
+  <div class="mut" style="margin-bottom:8px">⭐ ${left} super upvote${left===1?'':'s'} left. ${open?'Tap a button to change a vote, or ✕ to clear it so it comes back up in your voting queue.':'Voting is closed.'}</div>
+  <div style="margin-bottom:10px"><button class="btn" data-act="clearall" ${open&&Object.keys(m).length?'':'disabled'} style="border-color:var(--down)">Clear all my votes${testMode?' (test)':''}</button></div>`;
   if(!ids.length)h+='<div class="mut">Nothing here yet.</div>';
   h+=ids.slice(0,200).map(id=>{const s=BYID.get(id),c=m[id];const b=(v,l,col)=>`<button class="btn" style="padding:4px 8px;${c===v?'border-color:'+col:''}" data-set="${id}|${v}" ${(!open||(v===2&&left<1&&c!==2))?'disabled':''}>${l}</button>`;
    return `<div class="row"><div class="t"><div>${esc(s[1])}</div><div class="mut">${esc(s[2])}</div></div>
-   <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${b(-1,'👎','var(--down)')}${b(0,'skip','var(--skip)')}${b(1,'👍','var(--up)')}${b(2,'⭐','var(--sup)')}</div></div>`}).join('');
+   <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${b(-1,'👎','var(--down)')}${b(0,'skip','var(--skip)')}${b(1,'👍','var(--up)')}${b(2,'⭐','var(--sup)')}<button class="btn" title="Clear this vote (back to unvoted)" style="padding:4px 8px" data-clear="${id}" ${open?'':'disabled'}>✕</button></div></div>`}).join('');
   if(ids.length>200)h+=`<div class="mut" style="padding-top:8px">Showing the first 200 of ${ids.length}. Use the filters to narrow down.</div>`;
   $('#app').innerHTML=h+'</div>';
 }
@@ -496,11 +497,19 @@ document.addEventListener('click',async e=>{
   if(t.dataset.vote!==undefined){doVote(parseInt(t.dataset.vote,10));return}
   if(t.dataset.set){const [id,c]=t.dataset.set.split('|');if(!votingOpen())return;if(parseInt(c,10)===2&&cur()[id]!==2&&usedSupers()>=SUPER_LIMIT)return;setVote(id,parseInt(c,10));render();return}
   if(t.dataset.filt){filt=t.dataset.filt;render();return}
+  if(t.dataset.clear){if(!votingOpen())return;delVote(t.dataset.clear);undoStack=undoStack.filter(x=>x!==t.dataset.clear);render();return}
   const a=t.dataset.act;
   if(a==='login')doLogin();
   else if(a==='logout'){try{await post('/api/logout',{})}catch(x){}me=null;mine={};allVotes=null;testMode=false;render()}
   else if(a==='play'){playing=true;const id=order.find(i=>!(i in cur()));$('#pl').innerHTML=playerHtml(id)}
   else if(a==='undo')undo();
+  else if(a==='clearall'){
+    if(!votingOpen())return;
+    const n=Object.keys(cur()).length;if(!n)return;
+    if(!confirm(`Clear all ${n} of your ${testMode?'test ':''}votes? You'll start from the beginning again.`))return;
+    for(const id of Object.keys(cur()))delVote(id);
+    undoStack=[];playing=false;render();
+  }
   else if(a==='copylist')copyText(window.__copyList||'');
   else if(a==='copylinks')copyText(window.__copyLinks||'');
   else if(a==='toggletest'){testMode=!testMode;lsSet('pv_testmode_'+me.name,testMode?'1':'0');playing=false;undoStack=[];if(!testMode)try{await loadVotes()}catch(x){}setStatus(testMode?'test mode: not counted':'');render()}

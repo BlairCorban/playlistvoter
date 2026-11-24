@@ -84,6 +84,21 @@ async function login(w, name, pw) {
   assert.ok(!d.querySelector('.testbar')); d.querySelector('[data-tab=mine]').click(); await sleep(30);
   assert.ok(d.querySelector('#app').textContent.includes('all (20)')); ok('turning test mode off restores the real 20 votes');
 
+  // clear one vote, then clear all
+  d.querySelector('[data-tab=mine]').click(); await sleep(30);
+  const firstId = d.querySelector('[data-clear]').dataset.clear;
+  d.querySelector('[data-clear]').click(); await sleep(900);
+  assert.strictEqual((await query("SELECT count(*)::int AS c FROM votes v JOIN users u ON u.id=v.user_id WHERE u.name='Chad'"))[0].c, 19);
+  assert.strictEqual((await query("SELECT count(*)::int AS c FROM votes WHERE video_id=$1", [firstId]))[0].c, 0); ok('clearing one vote removes it from the database');
+  d.querySelector('[data-act=clearall]').click(); await sleep(1200);
+  assert.strictEqual((await query("SELECT count(*)::int AS c FROM votes v JOIN users u ON u.id=v.user_id WHERE u.name='Chad'"))[0].c, 0); ok('clear all removes every one of my votes');
+  assert.ok(d.querySelector('#app').textContent.includes('Nothing here yet')); ok('my votes list is empty after clearing');
+  d.querySelector('[data-tab=vote]').click(); await sleep(30);
+  assert.ok(d.querySelector('.vbtns') && d.querySelector('#app').textContent.includes('0 of ' + SONGS.length)); ok('voting queue restarts from zero');
+  for (let i = 0; i < 4; i++) d.querySelector('[data-vote="1"]').click(); await sleep(900);
+  const ref = (await query("SELECT count(*)::int AS c FROM votes v JOIN users u ON u.id=v.user_id WHERE u.name='Chad'"))[0].c;
+  assert.strictEqual(ref, 4); ok('can vote again after clearing');
+
   // Blair (admin) votes, sees everything, closes voting
   const blair = makeBrowser(); await sleep(250); d = blair.document;
   await login(blair, 'Blair', 'pw-blair');
