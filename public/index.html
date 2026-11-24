@@ -88,7 +88,7 @@ let SONGS=[],BYID=new Map(),ART={};
 let me=null,names=[],closed=false,SUPER_LIMIT=15;
 let mine={},allVotes=null;                 /* real data from the server */
 let testMode=false,testMine={},fakes=[];   /* test mode: local only, never sent anywhere */
-let tab='vote',playing=false,undoStack=[],loginErr='',busy=false;
+let tab='vote',playing=false,undoStack=[],loginErr='',busy=false,reviewing=false,reviewDone=new Set(),reviewUndo=[];
 let thr=4,metric='score',filt='all',wrapFor=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -225,9 +225,18 @@ function playerHtml(id){
 function renderVote(){
   const left=SUPER_LIMIT-usedSupers();
   const pct=Math.round(doneCount()/SONGS.length*100);
-  const nextId=order.find(id=>!(id in cur()));
-  const prog=`<div class="mut">${doneCount()} of ${SONGS.length} done (${pct}%) · ⭐ ${left} super upvote${left===1?'':'s'} left</div><div class="bar"><i style="width:${pct}%"></i></div>`;
+  const skipIds=order.filter(id=>cur()[id]===0);
+  const revLeft=skipIds.filter(id=>!reviewDone.has(id));
+  if(reviewing&&!votingOpen())reviewing=false;
+  const nextId=reviewing?revLeft[0]:order.find(id=>!(id in cur()));
+  const prog=reviewing
+    ?`<div class="mut">Re-voting skipped songs: ${revLeft.length} left to look at · ⭐ ${left} super upvote${left===1?'':'s'} left · <button class="btn" data-act="reviewstop" style="padding:2px 8px">Back to normal voting</button></div><div class="bar"><i style="width:${skipIds.length?Math.round((1-revLeft.length/skipIds.length)*100):100}%"></i></div>`
+    :`<div class="mut">${doneCount()} of ${SONGS.length} done (${pct}%) · ⭐ ${left} super upvote${left===1?'':'s'} left${skipIds.length?` · <button class="btn" data-act="reviewstart" style="padding:2px 8px">Re-vote my ${skipIds.length} skipped</button>`:''}</div><div class="bar"><i style="width:${pct}%"></i></div>`;
   if(!votingOpen()){$('#app').innerHTML=`<div class="card">${prog}<h2>Voting is closed</h2><p>Head to <b>Results</b>, <b>Stats</b> and <b>Wrapped</b> to see how it went.</p></div>`;return}
+  if(!nextId&&reviewing){
+    $('#app').innerHTML=`<div class="card">${prog}<h2>Skipped songs sorted 🎉</h2><p>You've been through every song you skipped. Anything you skipped again is still a skip. Change any vote under <b>My votes</b> until voting closes.</p><button class="btn" data-act="reviewstop">Done</button></div>`;
+    return;
+  }
   if(!nextId){
     $('#app').innerHTML=`<div class="card">${prog}<h2>You're done 🎉</h2><p>All ${SONGS.length} songs voted on. You can still change any vote under <b>My votes</b> until voting closes.</p></div>`;
     return;
@@ -243,7 +252,7 @@ function renderVote(){
     <button class="u" data-vote="1">👍 Up<small>→ or U</small></button>
     <button class="s" data-vote="2" ${left<1?'disabled':''}>⭐ Super<small>↑ or S · ${left} left</small></button>
   </div>
-  <p class="mut" style="margin:10px 0 0">Skip = haven't heard it or don't care (counts as neutral). <button class="btn" data-act="undo" ${undoStack.length?'':'disabled'} style="padding:4px 10px">↶ Undo <kbd>Z</kbd></button></p></div>`;
+  <p class="mut" style="margin:10px 0 0">Skip = haven't heard it or don't care (counts as neutral). <button class="btn" data-act="undo" ${(reviewing?reviewUndo.length:undoStack.length)?'':'disabled'} style="padding:4px 10px">↶ Undo <kbd>Z</kbd></button></p></div>`;
 }
 function renderMine(){
   const m=cur(),left=SUPER_LIMIT-usedSupers(),open=votingOpen();
@@ -549,16 +558,25 @@ function makeFakes(){
 
 /* ---------- actions ---------- */
 function startSession(){
-  order=orderFor(me.name.toLowerCase());undoStack=[];playing=false;
+  order=orderFor(me.name.toLowerCase());undoStack=[];reviewing=false;reviewDone=new Set();reviewUndo=[];playing=false;
   testMode=lsGet('pv_testmode_'+me.name)==='1';loadTest();
 }
 function doVote(c){
   if(!votingOpen())return;
+  if(reviewing){
+    const id=order.find(i=>cur()[i]===0&&!reviewDone.has(i));if(!id)return;
+    if(c===2&&usedSupers()>=SUPER_LIMIT)return;
+    reviewUndo.push({id,prev:0});reviewDone.add(id);
+    if(c!==0)setVote(id,c);
+    playing=false;render();return;
+  }
   const id=order.find(i=>!(i in cur()));if(!id)return;
   if(c===2&&usedSupers()>=SUPER_LIMIT)return;
   setVote(id,c);undoStack.push(id);playing=false;render();
 }
-function undo(){const id=undoStack.pop();if(!id)return;delVote(id);playing=false;render()}
+function undo(){
+  if(reviewing){const u=reviewUndo.pop();if(!u)return;reviewDone.delete(u.id);setVote(u.id,u.prev);playing=false;render();return}
+  const id=undoStack.pop();if(!id)return;delVote(id);playing=false;render()}
 function showBox(text){$('#copybox').innerHTML='<p class="mut">Select all and copy:</p><textarea readonly id="cb"></textarea>';const t=$('#cb');t.value=text;t.focus();t.select()}
 async function copyText(text){
   try{await navigator.clipboard.writeText(text);setStatus('copied ✓')}catch(e){showBox(text)}
@@ -583,6 +601,8 @@ document.addEventListener('click',async e=>{
   if(a==='login')doLogin();
   else if(a==='logout'){try{await post('/api/logout',{})}catch(x){}me=null;mine={};allVotes=null;testMode=false;render()}
   else if(a==='play'){playing=true;const id=order.find(i=>!(i in cur()));$('#pl').innerHTML=playerHtml(id)}
+  else if(a==='reviewstart'){reviewing=true;reviewDone=new Set();reviewUndo=[];playing=false;render()}
+  else if(a==='reviewstop'){reviewing=false;playing=false;render()}
   else if(a==='undo')undo();
   else if(a==='clearall'){
     if(!votingOpen())return;

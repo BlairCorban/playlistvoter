@@ -108,6 +108,16 @@ async function login(w, name, pw) {
   for (let i = 0; i < 30; i++) d.querySelector('[data-vote="1"]').click();
   for (let i = 0; i < 30; i++) d.querySelector('[data-vote="-1"]').click();
   await sleep(1200);
+  // re-vote skipped: skip 2, then review them and upvote one
+  d.querySelector('[data-vote="0"]').click(); d.querySelector('[data-vote="0"]').click(); await sleep(50);
+  assert.ok(d.querySelector('[data-act=reviewstart]')); ok('re-vote skipped button appears');
+  d.querySelector('[data-act=reviewstart]').click(); await sleep(30);
+  assert.ok(d.querySelector('#app').textContent.includes('Re-voting skipped songs: 2 left')); ok('review mode lists the skipped songs');
+  d.querySelector('[data-vote="1"]').click(); await sleep(30);
+  assert.ok(d.querySelector('#app').textContent.includes('1 left to look at')); ok('re-voting a skip moves on');
+  d.querySelector('[data-vote="0"]').click(); await sleep(30);
+  assert.ok(d.querySelector('#app').textContent.includes('Skipped songs sorted')); ok('skipping again keeps the skip and finishes review');
+  d.querySelector('[data-act=reviewstop]').click(); await sleep(30);
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
   let st = d.querySelector('#app').textContent;
   assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');
