@@ -88,7 +88,7 @@ let SONGS=[],BYID=new Map(),ART={};
 let me=null,names=[],closed=false,SUPER_LIMIT=15;
 let mine={},allVotes=null;                 /* real data from the server */
 let testMode=false,testMine={},fakes=[];   /* test mode: local only, never sent anywhere */
-let tab='vote',playing=false,undoStack=[],loginErr='',busy=false,reviewing=false,reviewDone=new Set(),reviewUndo=[];
+let mq='',tab='vote',playing=false,undoStack=[],loginErr='',busy=false,reviewing=false,reviewDone=new Set(),reviewUndo=[];
 let thr=4,metric='score',filt='all',wrapFor=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -257,16 +257,17 @@ function renderVote(){
 function renderMine(){
   const m=cur(),left=SUPER_LIMIT-usedSupers(),open=votingOpen();
   const fm={all:()=>true,up:c=>c===1,super:c=>c===2,down:c=>c===-1,skip:c=>c===0};
-  const ids=Object.keys(m).filter(id=>BYID.has(id)&&fm[filt](m[id]));
+  const ql=mq.trim().toLowerCase();
+  const ids=Object.keys(m).filter(id=>BYID.has(id)&&fm[filt](m[id])&&(!ql||(BYID.get(id)[1]+' '+BYID.get(id)[2]).toLowerCase().includes(ql)));
   const counts=c=>Object.values(m).filter(fm[c]).length;
   let h=`<div class="card"><div class="seg"><span class="mut">Show:</span>${['all','super','up','down','skip'].map(f=>`<button class="btn" data-filt="${f}" style="${filt===f?'border-color:var(--accent)':''}">${f} (${counts(f)})</button>`).join('')}</div>
   <div class="mut" style="margin-bottom:8px">⭐ ${left} super upvote${left===1?'':'s'} left. ${open?'Tap a button to change a vote, or ✕ to clear it so it comes back up in your voting queue.':'Voting is closed.'}</div>
+  <div style="margin-bottom:10px"><input id="mq" type="search" placeholder="Search your votes by song or artist" value="${esc(mq)}" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--line,#2a2f3a);background:transparent;color:inherit;font-size:16px"></div>
   <div style="margin-bottom:10px"><button class="btn" data-act="clearall" ${open&&Object.keys(m).length?'':'disabled'} style="border-color:var(--down)">Clear all my votes${testMode?' (test)':''}</button></div>`;
   if(!ids.length)h+='<div class="mut">Nothing here yet.</div>';
-  h+=ids.slice(0,200).map(id=>{const s=BYID.get(id),c=m[id];const b=(v,l,col)=>`<button class="btn" style="padding:4px 8px;${c===v?'border-color:'+col:''}" data-set="${id}|${v}" ${(!open||(v===2&&left<1&&c!==2))?'disabled':''}>${l}</button>`;
+  h+=ids.map(id=>{const s=BYID.get(id),c=m[id];const b=(v,l,col)=>`<button class="btn" style="padding:4px 8px;${c===v?'border-color:'+col:''}" data-set="${id}|${v}" ${(!open||(v===2&&left<1&&c!==2))?'disabled':''}>${l}</button>`;
    return `<div class="row"><div class="t"><div>${esc(s[1])}</div><div class="mut">${esc(s[2])}</div></div>
    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${b(-1,'👎','var(--down)')}${b(0,'skip','var(--skip)')}${b(1,'👍','var(--up)')}${b(2,'⭐','var(--sup)')}<button class="btn" title="Clear this vote (back to unvoted)" style="padding:4px 8px" data-clear="${id}" ${open?'':'disabled'}>✕</button></div></div>`}).join('');
-  if(ids.length>200)h+=`<div class="mut" style="padding-top:8px">Showing the first 200 of ${ids.length}. Use the filters to narrow down.</div>`;
   $('#app').innerHTML=h+'</div>';
 }
 function rankList(){
@@ -626,6 +627,9 @@ document.addEventListener('change',e=>{
   if(e.target.id==='thr'){thr=parseInt(e.target.value,10)||0;render()}
   if(e.target.id==='metric'){metric=e.target.value;render()}
   if(e.target.id==='wf'){wrapFor=e.target.value;render()}
+});
+document.addEventListener('input',e=>{
+  if(e.target&&e.target.id==='mq'){const v=e.target.value;mq=v;render();const n=document.getElementById('mq');if(n){n.focus();n.setSelectionRange(v.length,v.length)}}
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.id==='lp'){doLogin();return}

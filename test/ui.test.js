@@ -118,6 +118,15 @@ async function login(w, name, pw) {
   d.querySelector('[data-vote="0"]').click(); await sleep(30);
   assert.ok(d.querySelector('#app').textContent.includes('Skipped songs sorted')); ok('skipping again keeps the skip and finishes review');
   d.querySelector('[data-act=reviewstop]').click(); await sleep(30);
+  // My votes: no 200 row cap, and search works
+  d.querySelector('[data-tab=mine]').click(); await sleep(50);
+  const allRows = d.querySelectorAll('[data-set]').length / 4;
+  assert.ok(allRows > 50 && !d.querySelector('#app').textContent.includes('Showing the first 200')); ok('my votes lists every row');
+  const mqEl = d.querySelector('#mq'); mqEl.value = 'zzzz-no-such-song'; mqEl.dispatchEvent(new d.defaultView.Event('input', { bubbles: true })); await sleep(30);
+  assert.strictEqual(d.querySelectorAll('[data-set]').length, 0); ok('search with no match shows nothing');
+  const mq2 = d.querySelector('#mq'); mq2.value = ''; mq2.dispatchEvent(new d.defaultView.Event('input', { bubbles: true })); await sleep(30);
+  assert.ok(d.querySelectorAll('[data-set]').length > 0); ok('clearing search brings rows back');
+  d.querySelector('[data-tab=vote]').click(); await sleep(30);
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
   let st = d.querySelector('#app').textContent;
   assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');
