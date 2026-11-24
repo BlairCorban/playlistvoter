@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Best Of Playlist Vote</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--card2:#1f232c;--line:#2a2f3a;--text:#e8eaf0;--mut:#9aa3b2;--up:#3ecf8e;--down:#ff6b6b;--sup:#f5c451;--skip:#8b93a3;--accent:#7c9cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+.wrap{max-width:860px;margin:0 auto;padding:14px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+h1{font-size:18px;margin:0}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--mut)}
+button.chip:hover{border-color:var(--mut)}
+nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+nav button{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px}
+nav button.on{background:var(--accent);color:#0b1020;border-color:var(--accent);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:19px;line-height:1.3;word-break:break-word}
+.mut{color:var(--mut);font-size:13px}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);margin-right:6px;color:var(--mut)}
+.badge.both{border-color:var(--sup);color:var(--sup)}
+.bar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin:6px 0}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.player{margin:12px 0;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.player iframe{width:100%;height:100%;border:0}
+.btn{border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:10px 14px}
+.btn:hover{border-color:var(--mut)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.vbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.vbtns button{padding:14px 6px;font-size:15px;border-radius:12px;border:2px solid var(--line);background:var(--card2);font-weight:600}
+.vbtns button:disabled{opacity:.4;cursor:not-allowed}
+.vbtns .d{border-color:var(--down)}.vbtns .u{border-color:var(--up)}.vbtns .s{border-color:var(--sup)}.vbtns .k{border-color:var(--skip)}
+.vbtns small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .t{flex:1;min-width:0;word-break:break-word}
+.row .n{width:34px;text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+.pill{font-size:12px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pu{color:var(--up);border-color:var(--up)}.pd{color:var(--down);border-color:var(--down)}.ps{color:var(--sup);border-color:var(--sup)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--card2);border-radius:10px;padding:10px 12px}
+.tile b{display:block;font-size:24px}
+h3{margin:0 0 8px;font-size:16px}
+.mix{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--card2);min-width:120px}
+.mix i{display:block;height:100%}
+.hist{display:flex;align-items:flex-end;gap:3px;height:110px}
+.hist div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;position:relative;min-height:1px}
+.hist span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--mut)}
+.seg{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+select,input[type=text],input[type=password],input[type=number],textarea{background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}
+textarea{width:100%;min-height:140px}
+.banner{background:#2a2410;border:1px solid var(--sup);color:#f0dca0;padding:8px 12px;border-radius:10px;margin-bottom:12px;font-size:13px}
+.testbar{background:#102a22;border:1px solid var(--up);color:#bfeedd;padding:8px 12px;border-radius:10px;margin-bottom:12px;font-size:13px}
+.testbar .btn{padding:3px 9px;margin:4px 6px 0 0}
+kbd{background:var(--card2);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:6px 6px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+.story{border-radius:16px;padding:20px 18px;margin-bottom:14px;background:linear-gradient(160deg,#1b2140,#241a3a);border:1px solid #38406a}
+.story .em{font-size:34px}
+.story h2{margin:6px 0 8px;font-size:22px}
+.story p{margin:6px 0;font-size:16px}
+.story .song{display:block;margin:4px 0;padding:6px 10px;background:rgba(255,255,255,.07);border-radius:8px;font-size:14px}
+.login{max-width:380px;margin:30px auto}
+.login select,.login input{width:100%;margin-bottom:10px}
+@media (max-width:520px){.vbtns{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Best Of Playlist Vote</h1>
+    <div><button class="chip" id="testbtn" data-act="toggletest" hidden></button> <span class="chip" id="who" hidden></span> <button class="chip" id="outbtn" data-act="logout" hidden>Sign out</button> <span class="chip" id="status"></span></div>
+  </header>
+  <div id="banner"></div>
+  <div id="tb"></div>
+  <nav id="nav"></nav>
+  <div id="app"><div class="card">Loading…</div></div>
+</div>
+<script>
+let SONGS=[],BYID=new Map(),ART={};
+let me=null,names=[],closed=false,SUPER_LIMIT=15;
+let mine={},allVotes=null;                 /* real data from the server */
+let testMode=false,testMine={},fakes=[];   /* test mode: local only, never sent anywhere */
+let tab='vote',playing=false,undoStack=[],loginErr='',busy=false;
+let thr=4,metric='score',filt='all',wrapFor=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ytUrl=id=>'https://www.youtube.com/watch?v='+id;
+const ymUrl=id=>'https://music.youtube.com/watch?v='+id;
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+/* ---------- API ---------- */
+async function api(path,opts){
+  const r=await fetch(path,Object.assign({credentials:'same-origin',headers:{'Content-Type':'application/json'}},opts));
+  let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok){const err=new Error((j&&j.error)||r.statusText);err.status=r.status;throw err}
+  return j;
+}
+const post=(p,b)=>api(p,{method:'POST',body:JSON.stringify(b)});
+
+/* ---------- helpers ---------- */
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function orderFor(key){const r=rng(hash(key)),a=SONGS.map(s=>s[0]);for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+let order=[];
+function artistOf(s){
+  const [id,title,ch]=s;let a;
+  if(/ - Topic$/.test(ch))a=ch.replace(/ - Topic$/,'');
+  else if(title.includes(' - '))a=title.split(' - ')[0];
+  else if(title.includes(' ~ '))a=title.split(' ~ ')[0];
+  else a=ch;
+  a=a.split(/\s+(?:x|X|&|ft\.?|feat\.?|f\/)\s+|,\s*|\s*\+\s*/)[0].replace(/^\d+\.\s*/,'').trim();
+  return a||ch;
+}
+const cur=()=>testMode?testMine:mine;
+const usedSupers=()=>Object.values(cur()).filter(c=>c===2).length;
+const doneCount=()=>Object.keys(cur()).length;
+const revealed=()=>testMode||closed||(me&&me.admin);
+const votingOpen=()=>testMode||!closed;
+function setStatus(t){$('#status').textContent=t}
+function banner(t){$('#banner').innerHTML=t?'<div class="banner">'+esc(t)+'</div>':''}
+
+/* ---------- saving (real mode) ---------- */
+let pending={},saving=false,timer=null;
+function setVote(id,c){
+  cur()[id]=c;
+  if(testMode){lsSet('pv_test_'+me.name,JSON.stringify({mine:testMine,fakes}));setStatus('test mode: not counted');return}
+  pending[id]=c;clearTimeout(timer);timer=setTimeout(flush,600);setStatus('saving…');
+}
+function delVote(id){
+  delete cur()[id];
+  if(testMode){lsSet('pv_test_'+me.name,JSON.stringify({mine:testMine,fakes}));return}
+  pending[id]=null;clearTimeout(timer);timer=setTimeout(flush,600);setStatus('saving…');
+}
+async function flush(){
+  if(saving||!Object.keys(pending).length||testMode)return;
+  saving=true;const batch=pending;pending={};
+  try{await post('/api/votes',{changes:batch});setStatus('saved ✓');banner('')}
+  catch(e){
+    if(e.status===401){me=null;saving=false;render();return}
+    if(e.status===409||e.status===403){banner(e.message+'. Reloading your votes.');await loadVotes()}
+    else{pending=Object.assign(batch,pending);setStatus('retrying…');setTimeout(flush,3000)}
+  }
+  saving=false;
+  if(Object.keys(pending).length)timer=setTimeout(flush,300);
+  render();
+}
+async function loadVotes(){
+  const d=await api('/api/votes');
+  mine=d.mine;allVotes=d.all;closed=d.closed;SUPER_LIMIT=d.superLimit||SUPER_LIMIT;
+}
+
+/* ---------- voters for stats ---------- */
+function voters(){
+  if(testMode){
+    return [{name:me.name+' (test)',v:testMine},...fakes].filter(x=>Object.keys(x.v).length);
+  }
+  if(!allVotes)return [];
+  const list=allVotes.map(x=>x.name===me.name?{name:x.name,v:mine}:x);
+  return list.filter(x=>Object.keys(x.v).length);
+}
+function aggregate(vs){
+  const m=new Map();
+  for(const s of SONGS)m.set(s[0],{s,up:0,sup:0,down:0,skip:0});
+  for(const p of vs)for(const [id,c] of Object.entries(p.v)){
+    const a=m.get(id);if(!a)continue;
+    if(c===1)a.up++;else if(c===2)a.sup++;else if(c===-1)a.down++;else a.skip++;
+  }
+  for(const a of m.values()){a.pos=a.up+a.sup;a.score=a.up+3*a.sup-a.down;a.cast=a.pos+a.down;a.n=a.cast+a.skip}
+  return m;
+}
+const sgn=c=>c===2||c===1?1:c===-1?-1:0;
+const pts=c=>c===2?2:c;
+
+/* ---------- views ---------- */
+function renderNav(){
+  const t=[['vote','Vote'],['mine','My votes'],['results','Results'],['stats','Stats'],['wrapped','Wrapped']];
+  $('#nav').innerHTML=me?t.map(([k,l])=>`<button data-tab="${k}" class="${tab===k?'on':''}">${l}${(k!=='vote'&&k!=='mine'&&!revealed())?' 🔒':''}</button>`).join(''):'';
+  $('#who').hidden=!me;$('#outbtn').hidden=!me;$('#testbtn').hidden=!me;
+  if(me){
+    $('#who').textContent=me.name+(me.admin?' (admin)':'');
+    const b=$('#testbtn');b.textContent=testMode?'🧪 Test mode: ON':'🧪 Test mode: off';
+    b.style.borderColor=testMode?'var(--up)':'';b.style.color=testMode?'var(--up)':'';
+  }
+  $('#tb').innerHTML=(me&&testMode)?`<div class="testbar"><b>TEST MODE.</b> Nothing you do here is sent to the server or counted. Results, Stats and Wrapped use only your test votes plus any fake voters below.<br>
+   <button class="btn" data-act="fill">🎲 Fill 50 random votes</button><button class="btn" data-act="fakes">👥 Add 5 fake voters</button><button class="btn" data-act="resettest">Reset test data</button><button class="btn" data-act="toggletest">Turn test mode off</button></div>`:'';
+}
+function render(){
+  renderNav();
+  if(!me){renderLogin();return}
+  if(tab==='vote')renderVote();
+  else if(tab==='mine')renderMine();
+  else if(!revealed())renderLocked();
+  else if(tab==='results')renderResults();
+  else if(tab==='stats')renderStats();
+  else renderWrapped();
+}
+function renderLogin(){
+  $('#app').innerHTML=`<div class="card login"><h2>Sign in</h2>
+  <p class="mut">Pick your name and enter the passphrase you were sent.</p>
+  <select id="ln">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>
+  <input type="password" id="lp" placeholder="Passphrase" autocomplete="current-password">
+  ${loginErr?`<div class="banner">${esc(loginErr)}</div>`:''}
+  <button class="btn" data-act="login" ${busy?'disabled':''} style="width:100%">Sign in</button></div>`;
+}
+function renderLocked(){
+  $('#app').innerHTML=`<div class="card"><h2>🔒 Locked for now</h2><p>Everyone's results unlock when voting closes, so nobody's votes get swayed by what the others did. Keep voting! You can try the stats screens early by switching on <b>Test mode</b> at the top.</p></div>`;
+}
+function songHead(s){
+  const b=s[3]===3?'<span class="badge both">in both playlists</span>':s[3]===1?'<span class="badge">playlist 1</span>':'<span class="badge">playlist 2</span>';
+  return `${b}<h2>${esc(s[1])}</h2><div class="mut">${esc(s[2])}</div>`;
+}
+function playerHtml(id){
+  if(playing)return `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  return `<button class="btn" data-act="play" style="font-size:18px;padding:14px 22px">▶ Play</button>`;
+}
+function renderVote(){
+  const left=SUPER_LIMIT-usedSupers();
+  const pct=Math.round(doneCount()/SONGS.length*100);
+  const nextId=order.find(id=>!(id in cur()));
+  const prog=`<div class="mut">${doneCount()} of ${SONGS.length} done (${pct}%) · ⭐ ${left} super upvote${left===1?'':'s'} left</div><div class="bar"><i style="width:${pct}%"></i></div>`;
+  if(!votingOpen()){$('#app').innerHTML=`<div class="card">${prog}<h2>Voting is closed</h2><p>Head to <b>Results</b>, <b>Stats</b> and <b>Wrapped</b> to see how it went.</p></div>`;return}
+  if(!nextId){
+    $('#app').innerHTML=`<div class="card">${prog}<h2>You're done 🎉</h2><p>All ${SONGS.length} songs voted on. You can still change any vote under <b>My votes</b> until voting closes.</p></div>`;
+    return;
+  }
+  const s=BYID.get(nextId);
+  $('#app').innerHTML=`<div class="card">${prog}
+  ${songHead(s)}
+  <div class="player" id="pl">${playerHtml(nextId)}</div>
+  <div class="mut">If the player won't load: <a href="${ymUrl(nextId)}" target="_blank" rel="noopener">open in YouTube Music</a> · <a href="${ytUrl(nextId)}" target="_blank" rel="noopener">open on YouTube</a></div>
+  <div class="vbtns">
+    <button class="d" data-vote="-1">👎 Down<small>← or D</small></button>
+    <button class="k" data-vote="0">Skip<small>↓ or space</small></button>
+    <button class="u" data-vote="1">👍 Up<small>→ or U</small></button>
+    <button class="s" data-vote="2" ${left<1?'disabled':''}>⭐ Super<small>↑ or S · ${left} left</small></button>
+  </div>
+  <p class="mut" style="margin:10px 0 0">Skip = haven't heard it or don't care (counts as neutral). <button class="btn" data-act="undo" ${undoStack.length?'':'disabled'} style="padding:4px 10px">↶ Undo <kbd>Z</kbd></button></p></div>`;
+}
+function renderMine(){
+  const m=cur(),left=SUPER_LIMIT-usedSupers(),open=votingOpen();
+  const fm={all:()=>true,up:c=>c===1,super:c=>c===2,down:c=>c===-1,skip:c=>c===0};
+  const ids=Object.keys(m).filter(id=>BYID.has(id)&&fm[filt](m[id]));
+  const counts=c=>Object.values(m).filter(fm[c]).length;
+  let h=`<div class="card"><div class="seg"><span class="mut">Show:</span>${['all','super','up','down','skip'].map(f=>`<button class="btn" data-filt="${f}" style="${filt===f?'border-color:var(--accent)':''}">${f} (${counts(f)})</button>`).join('')}</div>
+  <div class="mut" style="margin-bottom:8px">⭐ ${left} super upvote${left===1?'':'s'} left. ${open?'Tap a button to change a vote.':'Voting is closed.'}</div>`;
+  if(!ids.length)h+='<div class="mut">Nothing here yet.</div>';
+  h+=ids.slice(0,200).map(id=>{const s=BYID.get(id),c=m[id];const b=(v,l,col)=>`<button class="btn" style="padding:4px 8px;${c===v?'border-color:'+col:''}" data-set="${id}|${v}" ${(!open||(v===2&&left<1&&c!==2))?'disabled':''}>${l}</button>`;
+   return `<div class="row"><div class="t"><div>${esc(s[1])}</div><div class="mut">${esc(s[2])}</div></div>
+   <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${b(-1,'👎','var(--down)')}${b(0,'skip','var(--skip)')}${b(1,'👍','var(--up)')}${b(2,'⭐','var(--sup)')}</div></div>`}).join('');
+  if(ids.length>200)h+=`<div class="mut" style="padding-top:8px">Showing the first 200 of ${ids.length}. Use the filters to narrow down.</div>`;
+  $('#app').innerHTML=h+'</div>';
+}
+function rankList(){
+  const vs=voters(),m=aggregate(vs),arr=[...m.values()];
+  const key=a=>metric==='score'?a.score:a.pos;
+  arr.sort((a,b)=>key(b)-key(a)||b.sup-a.sup||a.down-b.down||a.s[1].localeCompare(b.s[1]));
+  return {vs,arr,key};
+}
+function renderResults(){
+  const {vs,arr,key}=rankList();
+  const sel=arr.filter(a=>key(a)>=thr&&a.n>0);
+  let admin='';
+  if(me.admin&&!testMode)admin=`<div class="card"><h3>Admin</h3><p class="mut">Voting is <b>${closed?'closed':'open'}</b>. ${closed?'Everyone can see results and Wrapped.':'Only you can see results right now.'}</p>
+   <button class="btn" data-act="${closed?'reopen':'close'}">${closed?'Reopen voting':'Close voting and reveal results to everyone'}</button></div>`;
+  let h=admin+`<div class="card"><h3>Pick the cut-off</h3>
+  <div class="seg"><span>Add songs with</span>
+   <select id="metric"><option value="score" ${metric==='score'?'selected':''}>score</option><option value="pos" ${metric==='pos'?'selected':''}>upvotes (up + super)</option></select>
+   <span>of at least</span><input type="number" id="thr" value="${thr}" style="width:80px"></div>
+  <div class="mut">Score: 👍 = +1, ⭐ = +3, 👎 = −1, skip = 0. ${vs.length} voter${vs.length===1?'':'s'} so far.</div>
+  <p><b>${sel.length}</b> song${sel.length===1?'':'s'} make the cut.</p>
+  <button class="btn" data-act="copylist">Copy list (title + link)</button> <button class="btn" data-act="copylinks">Copy links only</button>
+  <div id="copybox"></div></div>
+  <div class="card"><h3>All songs, best first</h3>`;
+  h+=arr.slice(0,300).map((a,i)=>`<div class="row" style="${key(a)>=thr&&a.n>0?'':'opacity:.55'}"><div class="n">${i+1}</div><div class="t"><div>${esc(a.s[1])}${a.s[3]===3?' <span class="badge both">both</span>':''}</div><div class="mut">${esc(a.s[2])} · <a href="${ymUrl(a.s[0])}" target="_blank" rel="noopener">listen</a></div></div>
+   <div style="text-align:right"><span class="pill ps">⭐${a.sup}</span> <span class="pill pu">👍${a.up}</span> <span class="pill pd">👎${a.down}</span> <b style="margin-left:6px">${a.score}</b></div></div>`).join('');
+  if(arr.length>300)h+=`<div class="mut" style="padding-top:8px">Showing the top 300 of ${arr.length}.</div>`;
+  $('#app').innerHTML=h+'</div>';
+  window.__copyList=sel.map(a=>a.s[1]+'  '+ytUrl(a.s[0])).join('\n');
+  window.__copyLinks=sel.map(a=>ytUrl(a.s[0])).join('\n');
+}
+function mixBar(p){
+  const c=Object.values(p.v),n=c.length||1;
+  const k={s:c.filter(x=>x===2).length,u:c.filter(x=>x===1).length,k:c.filter(x=>x===0).length,d:c.filter(x=>x===-1).length};
+  return `<div class="mix" title="⭐ ${k.s}, 👍 ${k.u}, skip ${k.k}, 👎 ${k.d}"><i style="width:${k.s/n*100}%;background:var(--sup)"></i><i style="width:${k.u/n*100}%;background:var(--up)"></i><i style="width:${k.k/n*100}%;background:var(--skip)"></i><i style="width:${k.d/n*100}%;background:var(--down)"></i></div>`;
+}
+const pill=a=>`<span class="pill ps">⭐${a.sup}</span> <span class="pill pu">👍${a.up}</span> <span class="pill pd">👎${a.down}</span>`;
+function songRows(list,fn){return list.length?list.map(a=>`<div class="row"><div class="t">${esc(a.s[1])}<div class="mut">${esc(a.s[2])}</div></div><div style="text-align:right">${fn(a)}</div></div>`).join(''):'<div class="mut">Nothing yet.</div>'}
+
+/* ---------- per-person numbers (stats + wrapped) ---------- */
+function personStats(vs){
+  return vs.map(p=>{
+    const c=Object.values(p.v),cast=c.filter(x=>x!==0).length,downs=c.filter(x=>x===-1).length;
+    return {p,name:p.name,total:c.length,cast,downs,skips:c.length-cast,sup:c.filter(x=>x===2).length,downRate:cast?downs/cast:0,posRate:cast?(cast-downs)/cast:0};
+  });
+}
+function others(vs,p,id){let pos=0,down=0;for(const q of vs){if(q===p)continue;const y=q.v[id];if(y===1||y===2)pos++;else if(y===-1)down++}return {pos,down,cast:pos+down}}
+function agreement(vs){
+  const pairs=[];
+  for(let i=0;i<vs.length;i++)for(let j=i+1;j<vs.length;j++){
+    let same=0,n=0;
+    for(const [id,x] of Object.entries(vs[i].v)){const y=vs[j].v[id];if(y===undefined||x===0||y===0)continue;n++;if(sgn(x)===sgn(y))same++}
+    if(n>=30)pairs.push({a:vs[i],b:vs[j],pct:same/n,n});
+  }
+  return pairs.sort((x,y)=>y.pct-x.pct);
+}
+function renderStats(){
+  const vs=voters();
+  if(!vs.length){$('#app').innerHTML='<div class="card">No votes yet. Stats appear once people start voting.</div>';return}
+  const m=aggregate(vs),arr=[...m.values()];
+  const totalCast=vs.reduce((t,p)=>t+Object.keys(p.v).length,0);
+  const byScore=[...arr].sort((a,b)=>b.score-a.score||b.sup-a.sup);
+  const divisive=arr.filter(a=>a.pos>=2&&a.down>=2).sort((a,b)=>Math.min(b.pos,b.down)-Math.min(a.pos,a.down)||b.cast-a.cast).slice(0,8);
+  const minCast=Math.max(3,Math.ceil(vs.length*0.5));
+  const unanimous=arr.filter(a=>a.cast>=minCast&&a.down===0&&a.pos===a.cast).sort((a,b)=>b.sup-a.sup||b.cast-a.cast).slice(0,8);
+  const hated=arr.filter(a=>a.cast>=minCast&&a.pos===0).sort((a,b)=>b.down-a.down).slice(0,6);
+  const ps=personStats(vs),pairs=agreement(vs);
+  const ar=new Map();
+  for(const a of arr){if(!a.n)continue;const nm=ART[a.s[0]],k=nm.toLowerCase();let o=ar.get(k);if(!o){o={name:nm,songs:0,score:0};ar.set(k,o)}o.songs++;o.score+=a.score}
+  const artists=[...ar.values()].filter(o=>o.songs>=3).map(o=>({...o,avg:o.score/o.songs}));
+  const topA=[...artists].sort((a,b)=>b.avg-a.avg).slice(0,8),botA=[...artists].sort((a,b)=>a.avg-b.avg).slice(0,5);
+  const src={1:[],2:[],3:[]};for(const a of arr)if(a.n)src[a.s[3]].push(a.score);
+  const avg=x=>x.length?(x.reduce((t,y)=>t+y,0)/x.length).toFixed(2):'–';
+  const sc=arr.filter(a=>a.n>0).map(a=>a.score),lo=Math.min(...sc,-1),hi=Math.max(...sc,1);
+  const hist=[];for(let v=lo;v<=hi;v++)hist.push([v,sc.filter(x=>x===v).length]);
+  const hmax=Math.max(...hist.map(x=>x[1]),1);
+  const both=arr.filter(a=>a.s[3]===3);
+  $('#app').innerHTML=`
+  <div class="card"><div class="grid">
+   <div class="tile"><span class="mut">Voters</span><b>${vs.length}</b></div>
+   <div class="tile"><span class="mut">Votes cast</span><b>${totalCast}</b></div>
+   <div class="tile"><span class="mut">Songs with a vote</span><b>${arr.filter(a=>a.n).length}/${SONGS.length}</b></div>
+   <div class="tile"><span class="mut">Avg progress</span><b>${Math.round(totalCast/vs.length/SONGS.length*100)}%</b></div></div></div>
+  <div class="card"><h3>Top 10</h3>${songRows(byScore.slice(0,10),a=>pill(a)+` <b>${a.score}</b>`)}</div>
+  <div class="card"><h3>Everyone loves these</h3><div class="mut">At least ${minCast} votes, zero downvotes.</div>${songRows(unanimous,a=>pill(a))}</div>
+  <div class="card"><h3>Most divisive</h3><div class="mut">Plenty of love and plenty of hate.</div>${songRows(divisive,a=>pill(a))}</div>
+  <div class="card"><h3>Nobody wants these</h3><div class="mut">At least ${minCast} votes and no upvotes.</div>${songRows(hated,a=>pill(a))}</div>
+  <div class="card"><h3>The voters</h3>
+   <table><tr><th>Name</th><th>Done</th><th>Mix</th><th>Down rate</th><th>⭐ used</th></tr>
+   ${ps.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.total}/${SONGS.length}</td><td>${mixBar(x.p)}</td><td>${Math.round(x.downRate*100)}%</td><td>${x.sup}/${SUPER_LIMIT}</td></tr>`).join('')}</table>
+   <div class="mut" style="margin-top:6px">Mix bar: gold = super, green = up, grey = skip, red = down. Down rate ignores skips.</div></div>
+  ${pairs.length?`<div class="card"><h3>Taste twins and opposites</h3><div class="mut">How often two people vote the same way, on songs they both voted on (up and super count as the same).</div>
+   <div style="margin-top:8px"><b>Most alike</b></div>${pairs.slice(0,3).map(x=>`<div class="row"><div class="t">${esc(x.a.name)} + ${esc(x.b.name)}</div><b>${Math.round(x.pct*100)}%</b><span class="mut">${x.n} songs</span></div>`).join('')}
+   <div style="margin-top:8px"><b>Least alike</b></div>${pairs.slice(-3).reverse().map(x=>`<div class="row"><div class="t">${esc(x.a.name)} + ${esc(x.b.name)}</div><b>${Math.round(x.pct*100)}%</b><span class="mut">${x.n} songs</span></div>`).join('')}</div>`:''}
+  <div class="card"><h3>Artists (best guess from titles)</h3><div class="mut">Average score per song, artists with 3+ songs.</div>
+   <div style="margin-top:8px"><b>Most loved</b></div>${topA.map(o=>`<div class="row"><div class="t">${esc(o.name)}</div><span class="mut">${o.songs} songs</span><b>${o.avg.toFixed(1)}</b></div>`).join('')||'<div class="mut">Not enough data.</div>'}
+   <div style="margin-top:8px"><b>Least loved</b></div>${botA.map(o=>`<div class="row"><div class="t">${esc(o.name)}</div><span class="mut">${o.songs} songs</span><b>${o.avg.toFixed(1)}</b></div>`).join('')}</div>
+  <div class="card"><h3>Playlist 1 vs playlist 2</h3><div class="grid">
+   <div class="tile"><span class="mut">Playlist 1 only</span><b>${avg(src[1])}</b><span class="mut">avg score</span></div>
+   <div class="tile"><span class="mut">Playlist 2 only</span><b>${avg(src[2])}</b><span class="mut">avg score</span></div>
+   <div class="tile"><span class="mut">In both</span><b>${avg(src[3])}</b><span class="mut">avg score (${both.length} songs)</span></div></div>
+   <div style="margin-top:10px"><b>The songs that made both lists</b></div>${songRows(both,a=>pill(a)+` <b>${a.score}</b>`)}</div>
+  <div class="card"><h3>How scores are spread</h3><div class="hist" style="margin-bottom:22px">${hist.map(([v,n])=>`<div style="height:${n/hmax*100}%" title="${n} songs scored ${v}"><span>${v}</span></div>`).join('')}</div><div class="mut">Number of songs at each score. Hover a bar for the count.</div></div>`;
+}
+
+/* ---------- Wrapped ---------- */
+function artistTable(vs,p){
+  const t=new Map();
+  for(const s of SONGS){
+    const id=s[0],a=ART[id],k=a.toLowerCase();
+    let o=t.get(k);if(!o){o={name:a,me:{sum:0,n:0,pos:0,neg:0},ot:{sum:0,n:0,pos:0,neg:0}};t.set(k,o)}
+    const x=p.v[id];
+    if(x!==undefined&&x!==0){o.me.sum+=pts(x);o.me.n++;if(x>0)o.me.pos++;else o.me.neg++}
+    for(const q of vs){if(q===p)continue;const y=q.v[id];if(y!==undefined&&y!==0){o.ot.sum+=pts(y);o.ot.n++;if(y>0)o.ot.pos++;else o.ot.neg++}}
+  }
+  return [...t.values()];
+}
+function songLine(id,extra){const s=BYID.get(id);return `<span class="song">${esc(s[1])}${extra?` <span class="mut">${extra}</span>`:''}</span>`}
+function wrappedFor(vs,p,ps,pairs){
+  const cards=[];const me_=ps.find(x=>x.p===p);
+  /* super picks */
+  const supers=Object.entries(p.v).filter(([id,c])=>c===2).map(([id])=>id);
+  if(supers.length){
+    const lines=supers.map(id=>{const o=others(vs,p,id);const note=o.cast>=2&&o.pos===0?'nobody else liked it':o.cast?`${o.pos} of ${o.cast} others liked it`:'nobody else voted on it';return songLine(id,note)});
+    cards.push({em:'⭐',title:'Your super upvotes',body:`<p>You spent ${supers.length} of your ${SUPER_LIMIT} on these.</p>${lines.slice(0,8).join('')}`});
+  }
+  /* lone supporter */
+  const lone=Object.entries(p.v).filter(([id,c])=>c>0).map(([id,c])=>({id,c,o:others(vs,p,id)})).filter(x=>x.o.cast>=3&&x.o.pos===0).sort((a,b)=>b.c-a.c||b.o.down-a.o.down);
+  if(lone.length)cards.push({em:'🦄',title:'Only you liked these',body:`<p>${lone.length===1?'This one was':'These were'} the only song${lone.length===1?'':'s'} you rated up while every other voter on ${lone.length===1?'it':'them'} said no.</p>${lone.slice(0,5).map(x=>songLine(x.id,(x.c===2?'⭐ super · ':'')+x.o.down+' downvotes from the others')).join('')}`});
+  /* artists against the room */
+  const at=artistTable(vs,p);
+  const hate=at.filter(o=>o.me.n>=2&&o.ot.n>=4&&o.me.sum/o.me.n<=-0.5&&o.ot.sum/o.ot.n>=0.3).sort((a,b)=>(b.ot.sum/b.ot.n-b.me.sum/b.me.n)-(a.ot.sum/a.ot.n-a.me.sum/a.me.n));
+  if(hate.length){const o=hate[0];cards.push({em:'🙅',title:`You vs ${esc(o.name)}`,body:`<p>You downvoted ${o.me.neg} of your ${o.me.n} ${esc(o.name)} votes. Everyone else was ${Math.round(o.ot.pos/o.ot.n*100)}% positive on them.</p>${hate.slice(1,3).map(x=>`<p class="mut">Also out of step on ${esc(x.name)} (you ${Math.round(x.me.pos/x.me.n*100)}% positive, the others ${Math.round(x.ot.pos/x.ot.n*100)}%).</p>`).join('')}`})}
+  const love=at.filter(o=>o.me.n>=2&&o.ot.n>=4&&o.me.sum/o.me.n>=0.5&&o.ot.sum/o.ot.n<=-0.1).sort((a,b)=>(b.me.sum/b.me.n-b.ot.sum/b.ot.n)-(a.me.sum/a.me.n-a.ot.sum/a.ot.n));
+  if(love.length){const o=love[0];cards.push({em:'💘',title:`Your ${esc(o.name)} thing`,body:`<p>You were ${Math.round(o.me.pos/o.me.n*100)}% positive on ${esc(o.name)}. The rest of the group was only ${Math.round(o.ot.pos/o.ot.n*100)}% positive. Taste is a personal thing.</p>`})}
+  /* hot take */
+  let best=null,bd=0;
+  for(const [id,x] of Object.entries(p.v)){if(x===0)continue;let sum=0,n=0;for(const q of vs){if(q===p)continue;const y=q.v[id];if(y===undefined||y===0)continue;sum+=sgn(y);n++}if(n<3)continue;const d=Math.abs(sum/n-sgn(x));if(d>bd){bd=d;best=id}}
+  if(best&&bd>=1){const o=others(vs,p,best);cards.push({em:'🌶️',title:'Your hottest take',body:`<p>You voted ${p.v[best]===-1?'👎 down':p.v[best]===2?'⭐ super':'👍 up'} on this. ${o.cast} other${o.cast===1?'':'s'} voted too: ${o.pos} up, ${o.down} down.</p>${songLine(best)}`})}
+  /* style */
+  const byDown=[...ps].sort((a,b)=>b.downRate-a.downRate),byGen=[...ps].sort((a,b)=>b.posRate-a.posRate),bySkip=[...ps].sort((a,b)=>b.skips-a.skips);
+  const rk=byDown.indexOf(me_)+1;
+  let label=rk===1?'the pickiest voter in the group':rk===ps.length?'the most generous voter in the group':`#${rk} of ${ps.length} for pickiness`;
+  cards.push({em:'🎚️',title:'Your voting style',body:`<p>You downvoted ${Math.round(me_.downRate*100)}% of the songs you voted on. That makes you ${label}.</p><p class="mut">${me_.skips} skips · ${me_.sup} super upvotes${bySkip[0]===me_&&me_.skips>0?' · most skips in the group':''}</p>`});
+  /* twin */
+  const mine_=pairs.filter(x=>x.a===p||x.b===p);
+  if(mine_.length){const t=mine_[0],o=mine_[mine_.length-1];const nm=x=>(x.a===p?x.b:x.a).name;
+    cards.push({em:'👯',title:'Taste twin and opposite',body:`<p>Most like you: <b>${esc(nm(t))}</b> (${Math.round(t.pct*100)}% the same votes).</p><p>Least like you: <b>${esc(nm(o))}</b> (${Math.round(o.pct*100)}%).</p>`})}
+  return cards;
+}
+function groupAwards(vs,ps,pairs){
+  const m=aggregate(vs),arr=[...m.values()];const cards=[];
+  const minCast=Math.max(3,Math.ceil(vs.length*0.5));
+  const unan=arr.filter(a=>a.cast>=minCast&&a.down===0&&a.pos===a.cast).sort((a,b)=>b.sup-a.sup||b.cast-a.cast)[0];
+  const fight=arr.filter(a=>a.pos>=2&&a.down>=2).sort((a,b)=>Math.min(b.pos,b.down)-Math.min(a.pos,a.down)||b.cast-a.cast)[0];
+  const top=[...arr].sort((a,b)=>b.score-a.score||b.sup-a.sup)[0];
+  if(top)cards.push({em:'🏆',title:'Song of the playlist',body:songLine(top.s[0],`score ${top.score}`)});
+  if(unan)cards.push({em:'🤝',title:'Everyone agreed',body:songLine(unan.s[0],`${unan.pos} up, 0 down`)});
+  if(fight)cards.push({em:'🥊',title:'Biggest argument',body:songLine(fight.s[0],`${fight.pos} up, ${fight.down} down`)});
+  const pick=[...ps].sort((a,b)=>b.downRate-a.downRate)[0],gen=[...ps].sort((a,b)=>b.posRate-a.posRate)[0],skipper=[...ps].sort((a,b)=>b.skips-a.skips)[0];
+  cards.push({em:'🧐',title:'Pickiest voter',body:`<p><b>${esc(pick.name)}</b> downvoted ${Math.round(pick.downRate*100)}% of the songs they voted on.</p>`});
+  cards.push({em:'💖',title:'Most generous voter',body:`<p><b>${esc(gen.name)}</b> was positive on ${Math.round(gen.posRate*100)}% of their votes.</p>`});
+  if(skipper.skips>0)cards.push({em:'🤷',title:'Most skips',body:`<p><b>${esc(skipper.name)}</b> skipped ${skipper.skips} songs.</p>`});
+  /* lone-supporter count, contrarian score, conformist */
+  const sc=vs.map(p=>{let lone=0,dis=0,n=0;for(const [id,x] of Object.entries(p.v)){if(x===0)continue;const o=others(vs,p,id);if(o.cast<3)continue;const mean=(o.pos-o.down)/o.cast;dis+=Math.abs(mean-sgn(x));n++;if(x>0&&o.pos===0)lone++}return {p,lone,dis:n?dis/n:0,n}}).filter(x=>x.n>=20);
+  if(sc.length>1){
+    const wolf=[...sc].sort((a,b)=>b.lone-a.lone)[0],con=[...sc].sort((a,b)=>b.dis-a.dis)[0],yes=[...sc].sort((a,b)=>a.dis-b.dis)[0];
+    if(wolf.lone>0)cards.push({em:'🐺',title:'Lone wolf',body:`<p><b>${esc(wolf.p.name)}</b> liked ${wolf.lone} song${wolf.lone===1?'':'s'} that every other voter rejected.</p>`});
+    cards.push({em:'🔥',title:'Most contrarian',body:`<p><b>${esc(con.p.name)}</b> voted against the group's mood the most.</p>`});
+    cards.push({em:'🐑',title:'Most in tune with the group',body:`<p><b>${esc(yes.p.name)}</b> voted closest to everyone else's average.</p>`});
+  }
+  if(pairs.length){const t=pairs[0],o=pairs[pairs.length-1];cards.push({em:'💞',title:'Closest pair',body:`<p><b>${esc(t.a.name)}</b> and <b>${esc(t.b.name)}</b> voted the same way ${Math.round(t.pct*100)}% of the time.</p>`});cards.push({em:'⚡',title:'Furthest apart',body:`<p><b>${esc(o.a.name)}</b> and <b>${esc(o.b.name)}</b> agreed only ${Math.round(o.pct*100)}% of the time.</p>`})}
+  return cards;
+}
+function renderWrapped(){
+  const vs=voters();
+  if(vs.length<2){$('#app').innerHTML='<div class="card">Wrapped needs votes from at least two people. In test mode, add some fake voters.</div>';return}
+  const ps=personStats(vs),pairs=agreement(vs);
+  const myName=testMode?me.name+' (test)':me.name;
+  if(!wrapFor||!vs.some(v=>v.name===wrapFor))wrapFor=vs.some(v=>v.name===myName)?myName:vs[0].name;
+  const p=vs.find(v=>v.name===wrapFor);
+  const cards=wrappedFor(vs,p,ps,pairs),group=groupAwards(vs,ps,pairs);
+  const story=c=>`<div class="story"><div class="em">${c.em}</div><h2>${c.title}</h2>${c.body}</div>`;
+  $('#app').innerHTML=`<div class="card"><div class="seg"><span class="mut">Wrapped for:</span><select id="wf">${vs.map(v=>`<option ${v.name===wrapFor?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div></div>
+  <h3 style="margin:6px 2px 10px">${esc(wrapFor)}'s breakdown</h3>${cards.map(story).join('')}
+  <h3 style="margin:18px 2px 10px">The group awards</h3>${group.map(story).join('')}`;
+}
+
+/* ---------- test mode helpers ---------- */
+function loadTest(){
+  testMine={};fakes=[];
+  try{const d=JSON.parse(lsGet('pv_test_'+me.name)||'null');if(d){testMine=d.mine||{};fakes=d.fakes||[]}}catch(e){}
+}
+function saveTest(){lsSet('pv_test_'+me.name,JSON.stringify({mine:testMine,fakes}))}
+function makeFakes(){
+  const r=rng(Date.now()&0xffff),q={};
+  for(const s of SONGS)q[s[0]]=r();
+  const taste={};
+  const nm=['Fake Sam','Fake Alex','Fake Kai','Fake Rua','Fake Lee'];
+  fakes=nm.map(n=>{
+    const v={};let sup=0;const bias={};
+    for(const s of SONGS){
+      if(r()<0.15)continue;
+      const a=ART[s[0]];if(!(a in bias))bias[a]=(r()-0.5)*1.2;
+      const x=q[s[0]]+bias[a]+(r()-0.5)*0.5;
+      v[s[0]]=x>1.0&&sup<SUPER_LIMIT&&r()<0.4?(sup++,2):x>0.62?1:x<0.4?-1:(r()<0.5?0:-1);
+    }
+    return {name:n,v};
+  });
+  saveTest();
+}
+
+/* ---------- actions ---------- */
+function startSession(){
+  order=orderFor(me.name.toLowerCase());undoStack=[];playing=false;
+  testMode=lsGet('pv_testmode_'+me.name)==='1';loadTest();
+}
+function doVote(c){
+  if(!votingOpen())return;
+  const id=order.find(i=>!(i in cur()));if(!id)return;
+  if(c===2&&usedSupers()>=SUPER_LIMIT)return;
+  setVote(id,c);undoStack.push(id);playing=false;render();
+}
+function undo(){const id=undoStack.pop();if(!id)return;delVote(id);playing=false;render()}
+function showBox(text){$('#copybox').innerHTML='<p class="mut">Select all and copy:</p><textarea readonly id="cb"></textarea>';const t=$('#cb');t.value=text;t.focus();t.select()}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);setStatus('copied ✓')}catch(e){showBox(text)}
+}
+async function doLogin(){
+  const name=$('#ln').value,password=$('#lp').value;
+  busy=true;loginErr='';render();
+  try{
+    const d=await post('/api/login',{name,password});
+    me=d.user;await loadVotes();startSession();tab='vote';setStatus('');
+  }catch(e){loginErr=e.message}
+  busy=false;render();
+}
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button,a');if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;playing=false;if(me&&!testMode&&(tab==='results'||tab==='stats'||tab==='wrapped')){try{await loadVotes()}catch(x){if(x.status===401){me=null}}}render();return}
+  if(t.dataset.vote!==undefined){doVote(parseInt(t.dataset.vote,10));return}
+  if(t.dataset.set){const [id,c]=t.dataset.set.split('|');if(!votingOpen())return;if(parseInt(c,10)===2&&cur()[id]!==2&&usedSupers()>=SUPER_LIMIT)return;setVote(id,parseInt(c,10));render();return}
+  if(t.dataset.filt){filt=t.dataset.filt;render();return}
+  const a=t.dataset.act;
+  if(a==='login')doLogin();
+  else if(a==='logout'){try{await post('/api/logout',{})}catch(x){}me=null;mine={};allVotes=null;testMode=false;render()}
+  else if(a==='play'){playing=true;const id=order.find(i=>!(i in cur()));$('#pl').innerHTML=playerHtml(id)}
+  else if(a==='undo')undo();
+  else if(a==='copylist')copyText(window.__copyList||'');
+  else if(a==='copylinks')copyText(window.__copyLinks||'');
+  else if(a==='toggletest'){testMode=!testMode;lsSet('pv_testmode_'+me.name,testMode?'1':'0');playing=false;undoStack=[];if(!testMode)try{await loadVotes()}catch(x){}setStatus(testMode?'test mode: not counted':'');render()}
+  else if(a==='fill'&&testMode){let n=0;for(const id of order){if(n>=50)break;if(id in testMine)continue;const x=Math.random();testMine[id]=x<0.06&&usedSupers()<SUPER_LIMIT?2:x<0.45?1:x<0.75?-1:0;n++}saveTest();render()}
+  else if(a==='fakes'&&testMode){makeFakes();render()}
+  else if(a==='resettest'&&testMode){testMine={};fakes=[];undoStack=[];saveTest();render()}
+  else if(a==='close'||a==='reopen'){
+    if(a==='close'&&!confirm('Close voting? Nobody can vote after this and everyone can see all results.'))return;
+    try{await post('/api/admin',{closed:a==='close'});await loadVotes()}catch(x){banner(x.message)}render();
+  }
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='thr'){thr=parseInt(e.target.value,10)||0;render()}
+  if(e.target.id==='metric'){metric=e.target.value;render()}
+  if(e.target.id==='wf'){wrapFor=e.target.value;render()}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='lp'){doLogin();return}
+  if(!me||tab!=='vote'||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.metaKey||e.ctrlKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='arrowright'||k==='u')doVote(1);
+  else if(k==='arrowleft'||k==='d')doVote(-1);
+  else if(k==='arrowup'||k==='s')doVote(2);
+  else if(k==='arrowdown'||k===' ')doVote(0);
+  else if(k==='z'||k==='backspace')undo();
+  else return;
+  e.preventDefault();
+});
+
+/* ---------- start ---------- */
+(async function(){
+  try{
+    SONGS=await (await fetch('/songs.json')).json();
+    BYID=new Map(SONGS.map(s=>[s[0],s]));
+    for(const s of SONGS)ART[s[0]]=artistOf(s);
+    const [sess,nm]=await Promise.all([api('/api/session'),api('/api/names')]);
+    names=nm.names;closed=sess.closed;SUPER_LIMIT=sess.superLimit||SUPER_LIMIT;
+    if(sess.user){me=sess.user;await loadVotes();startSession()}
+  }catch(e){banner('Could not load: '+e.message)}
+  render();
+})();
+</script>
+</body>
+</html>

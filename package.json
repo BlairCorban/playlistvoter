@@ -1,0 +1,18 @@
+{
+  "name": "playlistvoter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Friend-group 'best of' playlist vote: up/down/super votes, stats, and a Wrapped-style breakdown.",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "test": "node test/api.test.js && node test/ui.test.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "jsdom": "^26.0.0"
+  },
+  "engines": { "node": ">=20" }
+}
