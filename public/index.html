@@ -88,7 +88,7 @@ let SONGS=[],BYID=new Map(),ART={};
 let me=null,names=[],closed=false,SUPER_LIMIT=15;
 let mine={},allVotes=null;                 /* real data from the server */
 let testMode=false,testMine={},fakes=[];   /* test mode: local only, never sent anywhere */
-let mq='',tab='vote',playing=false,undoStack=[],loginErr='',busy=false,reviewing=false,reviewDone=new Set(),reviewUndo=[];
+let mq='',autoplay=false,tab='vote',playing=false,undoStack=[],loginErr='',busy=false,reviewing=false,reviewDone=new Set(),reviewUndo=[];
 let thr=4,metric='score',filt='all',wrapFor=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -96,6 +96,7 @@ const ytUrl=id=>'https://www.youtube.com/watch?v='+id;
 const ymUrl=id=>'https://music.youtube.com/watch?v='+id;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+autoplay=lsGet('pv_autoplay')!=='0';
 
 /* ---------- API ---------- */
 async function api(path,opts){
@@ -252,7 +253,7 @@ function renderVote(){
     <button class="u" data-vote="1">👍 Up<small>→ or U</small></button>
     <button class="s" data-vote="2" ${left<1?'disabled':''}>⭐ Super<small>↑ or S · ${left} left</small></button>
   </div>
-  <p class="mut" style="margin:10px 0 0">Skip = haven't heard it or don't care (counts as neutral). <button class="btn" data-act="undo" ${(reviewing?reviewUndo.length:undoStack.length)?'':'disabled'} style="padding:4px 10px">↶ Undo <kbd>Z</kbd></button></p></div>`;
+  <p class="mut" style="margin:10px 0 0">Skip = haven't heard it or don't care (counts as neutral). <label style="white-space:nowrap"><input type="checkbox" data-act="toggleauto" ${autoplay?'checked':''}> Autoplay next song</label> <button class="btn" data-act="undo" ${(reviewing?reviewUndo.length:undoStack.length)?'':'disabled'} style="padding:4px 10px">↶ Undo <kbd>Z</kbd></button></p></div>`;
 }
 function renderMine(){
   const m=cur(),left=SUPER_LIMIT-usedSupers(),open=votingOpen();
@@ -569,15 +570,15 @@ function doVote(c){
     if(c===2&&usedSupers()>=SUPER_LIMIT)return;
     reviewUndo.push({id,prev:0});reviewDone.add(id);
     if(c!==0)setVote(id,c);
-    playing=false;render();return;
+    playing=autoplay;render();return;
   }
   const id=order.find(i=>!(i in cur()));if(!id)return;
   if(c===2&&usedSupers()>=SUPER_LIMIT)return;
-  setVote(id,c);undoStack.push(id);playing=false;render();
+  setVote(id,c);undoStack.push(id);playing=autoplay;render();
 }
 function undo(){
-  if(reviewing){const u=reviewUndo.pop();if(!u)return;reviewDone.delete(u.id);setVote(u.id,u.prev);playing=false;render();return}
-  const id=undoStack.pop();if(!id)return;delVote(id);playing=false;render()}
+  if(reviewing){const u=reviewUndo.pop();if(!u)return;reviewDone.delete(u.id);setVote(u.id,u.prev);playing=autoplay;render();return}
+  const id=undoStack.pop();if(!id)return;delVote(id);playing=autoplay;render()}
 function showBox(text){$('#copybox').innerHTML='<p class="mut">Select all and copy:</p><textarea readonly id="cb"></textarea>';const t=$('#cb');t.value=text;t.focus();t.select()}
 async function copyText(text){
   try{await navigator.clipboard.writeText(text);setStatus('copied ✓')}catch(e){showBox(text)}
@@ -592,7 +593,7 @@ async function doLogin(){
   busy=false;render();
 }
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('button,a');if(!t)return;
+  const t=e.target.closest('button,a,[data-act]');if(!t)return;
   if(t.dataset.tab){tab=t.dataset.tab;playing=false;if(me&&!testMode&&(tab==='results'||tab==='stats'||tab==='wrapped')){try{await loadVotes()}catch(x){if(x.status===401){me=null}}}render();return}
   if(t.dataset.vote!==undefined){doVote(parseInt(t.dataset.vote,10));return}
   if(t.dataset.set){const [id,c]=t.dataset.set.split('|');if(!votingOpen())return;if(parseInt(c,10)===2&&cur()[id]!==2&&usedSupers()>=SUPER_LIMIT)return;setVote(id,parseInt(c,10));render();return}
@@ -602,8 +603,9 @@ document.addEventListener('click',async e=>{
   if(a==='login')doLogin();
   else if(a==='logout'){try{await post('/api/logout',{})}catch(x){}me=null;mine={};allVotes=null;testMode=false;render()}
   else if(a==='play'){playing=true;const id=order.find(i=>!(i in cur()));$('#pl').innerHTML=playerHtml(id)}
-  else if(a==='reviewstart'){reviewing=true;reviewDone=new Set();reviewUndo=[];playing=false;render()}
-  else if(a==='reviewstop'){reviewing=false;playing=false;render()}
+  else if(a==='reviewstart'){reviewing=true;reviewDone=new Set();reviewUndo=[];playing=autoplay;render()}
+  else if(a==='toggleauto'){autoplay=!autoplay;lsSet('pv_autoplay',autoplay?'1':'0');if(!autoplay)playing=false;render()}
+  else if(a==='reviewstop'){reviewing=false;playing=autoplay;render()}
   else if(a==='undo')undo();
   else if(a==='clearall'){
     if(!votingOpen())return;

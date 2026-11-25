@@ -108,6 +108,12 @@ async function login(w, name, pw) {
   for (let i = 0; i < 30; i++) d.querySelector('[data-vote="1"]').click();
   for (let i = 0; i < 30; i++) d.querySelector('[data-vote="-1"]').click();
   await sleep(1200);
+  // autoplay: after a vote the next song's iframe should already be loaded
+  d.querySelector('[data-vote="1"]').click(); await sleep(30);
+  assert.ok(d.querySelector('iframe') && d.querySelector('iframe').src.includes('autoplay=1')); ok('next song autoplays after a vote');
+  d.querySelector('[data-act=toggleauto]').click(); await sleep(30);
+  assert.ok(!d.querySelector('iframe')); ok('autoplay can be switched off');
+  d.querySelector('[data-act=toggleauto]').click(); await sleep(30);
   // re-vote skipped: skip 2, then review them and upvote one
   d.querySelector('[data-vote="0"]').click(); d.querySelector('[data-vote="0"]').click(); await sleep(50);
   assert.ok(d.querySelector('[data-act=reviewstart]')); ok('re-vote skipped button appears');
