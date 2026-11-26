@@ -133,6 +133,14 @@ async function login(w, name, pw) {
   const mq2 = d.querySelector('#mq'); mq2.value = ''; mq2.dispatchEvent(new d.defaultView.Event('input', { bubbles: true })); await sleep(30);
   assert.ok(d.querySelectorAll('[data-set]').length > 0); ok('clearing search brings rows back');
   d.querySelector('[data-tab=vote]').click(); await sleep(30);
+  // stats only count people who voted on every song
+  d.querySelector('[data-tab=stats]').click(); await sleep(200);
+  assert.ok(d.querySelector('#app').textContent.includes('nobody has finished')); ok('stats ignore people who have not finished');
+  const fillRest = async (name) => { for (const s of SONGS) await query("INSERT INTO votes (user_id, video_id, code) SELECT id, $2, 0 FROM users WHERE name=$1 ON CONFLICT DO NOTHING", [name, Array.isArray(s) ? s[0] : s.id]); };
+  for (const nm of ['Blair', 'Chad', 'Angus']) await fillRest(nm);
+  d.querySelector('[data-tab=vote]').click(); await sleep(30);
+  d.querySelector('[data-tab=stats]').click(); await sleep(300);
+  assert.ok(d.querySelector('#app').textContent.includes('Not counted') && d.querySelector('#app').textContent.includes('Jack')); ok('unfinished voters are listed as not counted');
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
   let st = d.querySelector('#app').textContent;
   assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');

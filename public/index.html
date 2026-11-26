@@ -166,8 +166,17 @@ function voters(){
   }
   if(!allVotes)return [];
   const list=allVotes.map(x=>x.name===me.name?{name:x.name,v:mine}:x);
-  return list.filter(x=>Object.keys(x.v).length);
+  /* only people who have voted on (or skipped) every song count towards anything */
+  const cnt=x=>Object.keys(x.v).filter(id=>BYID.has(id)).length;
+  excluded=list.filter(x=>cnt(x)<SONGS.length).map(x=>({name:x.name,n:cnt(x)}));
+  return list.filter(x=>cnt(x)>=SONGS.length);
 }
+let excluded=[];
+function incompleteNote(){
+  if(testMode||!excluded.length)return '';
+  return `<div class="card"><div class="mut">Only counting people who have voted on every song. Not counted: ${excluded.map(x=>`${esc(x.name)} (${x.n}/${SONGS.length})`).join(', ')}.</div></div>`;
+}
+function withNote(fn){fn();const n=incompleteNote();if(n)$('#app').insertAdjacentHTML('afterbegin',n)}
 function aggregate(vs){
   const m=new Map();
   for(const s of SONGS)m.set(s[0],{s,up:0,sup:0,down:0,skip:0});
@@ -200,9 +209,9 @@ function render(){
   if(tab==='vote')renderVote();
   else if(tab==='mine')renderMine();
   else if(!revealed())renderLocked();
-  else if(tab==='results')renderResults();
-  else if(tab==='stats')renderStats();
-  else renderWrapped();
+  else if(tab==='results')withNote(renderResults);
+  else if(tab==='stats')withNote(renderStats);
+  else withNote(renderWrapped);
 }
 function renderLogin(){
   $('#app').innerHTML=`<div class="card login"><h2>Sign in</h2>
@@ -393,7 +402,7 @@ function pickinessCard(vs){
 }
 function renderStats(){
   const vs=voters();
-  if(!vs.length){$('#app').innerHTML='<div class="card">No votes yet. Stats appear once people start voting.</div>';return}
+  if(!vs.length){$('#app').innerHTML='<div class="card">No stats yet. They only include people who have voted on every song, and nobody has finished.</div>';return}
   const m=aggregate(vs),arr=[...m.values()];
   const totalCast=vs.reduce((t,p)=>t+Object.keys(p.v).length,0);
   const byScore=[...arr].sort((a,b)=>b.score-a.score||b.sup-a.sup);
@@ -521,7 +530,7 @@ function groupAwards(vs,ps,pairs){
 }
 function renderWrapped(){
   const vs=voters();
-  if(vs.length<2){$('#app').innerHTML='<div class="card">Wrapped needs votes from at least two people. In test mode, add some fake voters.</div>';return}
+  if(vs.length<2){$('#app').innerHTML='<div class="card">Wrapped needs at least two people who have voted on every song. In test mode, add some fake voters.</div>';return}
   const ps=personStats(vs),pairs=agreement(vs);
   const myName=testMode?me.name+' (test)':me.name;
   if(!wrapFor||!vs.some(v=>v.name===wrapFor))wrapFor=vs.some(v=>v.name===myName)?myName:vs[0].name;
