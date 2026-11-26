@@ -145,6 +145,7 @@ async function login(w, name, pw) {
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
   let st = d.querySelector('#app').textContent;
   assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');
+  assert.ok(st.includes('Super liked, but 3+ downvotes')); ok('stats has the super-liked-but-downvoted card');
   assert.ok(d.querySelectorAll('.spark i').length >= 3 && d.querySelector('svg polyline') === null || true); ok('sparkline bars render');
   d.querySelector('[data-tab=wrapped]').click(); await sleep(100);
   assert.ok(d.querySelector('#app').textContent.includes('Your pickiness over time')); ok('wrapped has a pickiness-over-time card');

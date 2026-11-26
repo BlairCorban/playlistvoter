@@ -431,6 +431,7 @@ function renderStats(){
    <div class="tile"><span class="mut">Avg progress</span><b>${Math.round(totalCast/vs.length/SONGS.length*100)}%</b></div></div></div>
   <div class="card"><h3>Top 10</h3>${songRows(byScore.slice(0,10),a=>pill(a)+` <b>${a.score}</b>`)}</div>
   <div class="card"><h3>Everyone loves these</h3><div class="mut">At least ${minCast} votes, zero downvotes.</div>${songRows(unanimous,a=>pill(a))}</div>
+  <div class="card"><h3>Super liked, but 3+ downvotes</h3><div class="mut">Someone spent a super on it and at least three people downvoted it.</div><div class="scrolllist">${songRows(arr.filter(a=>a.sup>=1&&a.down>=3).sort((a,b)=>b.down-a.down||b.sup-a.sup),a=>pill(a)+`<div class="mut">⭐ from ${vs.filter(p=>p.v[a.s[0]]===2).map(p=>esc(p.name)).join(', ')}</div>`)}</div></div>
   <div class="card"><h3>Most divisive</h3><div class="mut">Plenty of love and plenty of hate.</div>${songRows(divisive,a=>pill(a))}</div>
   <div class="card"><h3>Nobody wants these</h3><div class="mut">At least ${minCast} votes and no upvotes.</div>${songRows(hated,a=>pill(a))}</div>
   <div class="card"><h3>The voters</h3>
