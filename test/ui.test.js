@@ -136,7 +136,7 @@ async function login(w, name, pw) {
   d.querySelector('[data-tab=vote]').click(); await sleep(30);
   // stats only count people who voted on every song
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
-  assert.ok(d.querySelector('#app').textContent.includes('nobody has finished')); ok('stats ignore people who have not finished');
+  assert.ok(d.querySelector('#app').textContent.includes('nobody has got there yet')); ok('stats ignore people who have not finished');
   const fillRest = async (name) => { for (const s of SONGS) await query("INSERT INTO votes (user_id, video_id, code) SELECT id, $2, 0 FROM users WHERE name=$1 ON CONFLICT DO NOTHING", [name, Array.isArray(s) ? s[0] : s.id]); };
   for (const nm of ['Blair', 'Chad', 'Angus']) await fillRest(nm);
   d.querySelector('[data-tab=vote]').click(); await sleep(30);
