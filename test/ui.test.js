@@ -79,6 +79,7 @@ async function login(w, name, pw) {
   ok('results/stats/wrapped usable in test mode');
   const w = d.querySelector('#app').textContent;
   assert.ok(w.includes("Chad (test)'s breakdown") && w.includes('The group awards') && w.includes('Pickiest voter') && w.includes('Your voting style')); ok('wrapped cards render');
+  assert.ok(w.includes('How alike you are') && (w.match(/Fake (Sam|Alex|Kai|Rua|Lee)/g) || []).length >= 5); ok('wrapped lists similarity with every other person');
   console.log('   sample wrapped titles:', [...d.querySelectorAll('.story h2')].map((e) => e.textContent).join(' | '));
   d.querySelector('#testbtn').click(); await sleep(60);
   assert.ok(!d.querySelector('.testbar')); d.querySelector('[data-tab=mine]').click(); await sleep(30);

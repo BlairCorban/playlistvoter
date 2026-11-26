@@ -495,7 +495,9 @@ function wrappedFor(vs,p,ps,pairs){
   /* twin */
   const mine_=pairs.filter(x=>x.a===p||x.b===p);
   if(mine_.length){const t=mine_[0],o=mine_[mine_.length-1];const nm=x=>(x.a===p?x.b:x.a).name;
-    cards.push({em:'👯',title:'Taste twin and opposite',body:`<p>Most like you: <b>${esc(nm(t))}</b> (${Math.round(t.pct*100)}% the same votes).</p><p>Least like you: <b>${esc(nm(o))}</b> (${Math.round(o.pct*100)}%).</p>`})}
+    cards.push({em:'👯',title:'How alike you are',body:`<p>Most like you: <b>${esc(nm(t))}</b> (${Math.round(t.pct*100)}% the same votes).</p><p>Least like you: <b>${esc(nm(o))}</b> (${Math.round(o.pct*100)}%).</p>
+    <div style="margin-top:12px">${mine_.map(x=>{const pc=Math.round(x.pct*100);return `<div class="row"><div style="width:90px">${esc(nm(x))}</div><div style="flex:1;background:#2a2f3a;border-radius:6px;height:12px;overflow:hidden"><div style="width:${pc}%;height:100%;background:var(--accent,#7c9cff)"></div></div><div style="width:48px;text-align:right"><b>${pc}%</b></div></div>`}).join('')}</div>
+    <p class="mut">How often you voted the same way as each person on songs you both voted on (up and super count as the same, skips ignored).</p>`})}
   return cards;
 }
 function groupAwards(vs,ps,pairs){
