@@ -149,6 +149,14 @@ async function login(w, name, pw) {
   assert.ok(d.querySelectorAll('.spark i').length >= 3 && d.querySelector('svg polyline') === null || true); ok('sparkline bars render');
   d.querySelector('[data-tab=wrapped]').click(); await sleep(100);
   assert.ok(d.querySelector('#app').textContent.includes('Your pickiness over time')); ok('wrapped has a pickiness-over-time card');
+  {
+    let copied = null; Object.defineProperty(d.defaultView.navigator, 'clipboard', { value: { writeText: async (x) => { copied = x; } }, configurable: true });
+    d.querySelector('[data-act=copyliked]').click(); await sleep(50);
+    assert.ok(copied && copied.split('\n').every((l) => l.includes('https://')) && copied.split('\n').length > 5); ok('copy liked list has title + link per line');
+    const nLiked = copied.split('\n').length;
+    d.querySelector('[data-act=copysuper]').click(); await sleep(50);
+    assert.ok(copied.split('\n').length < nLiked); ok('copy super liked only is a shorter list');
+  }
   d.querySelector('[data-tab=results]').click(); await sleep(150);
   assert.ok(d.querySelector('#app').textContent.includes('Admin') && d.querySelector('[data-act=close]')); ok('admin sees results + close button early');
   d.querySelector('[data-act=close]').click(); await sleep(200);

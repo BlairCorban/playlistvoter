@@ -550,7 +550,11 @@ function renderWrapped(){
   const story=c=>`<div class="story"><div class="em">${c.em}</div><h2>${c.title}</h2>${c.body}</div>`;
   $('#app').innerHTML=`<div class="card"><div class="seg"><span class="mut">Wrapped for:</span><select id="wf">${vs.map(v=>`<option ${v.name===wrapFor?'selected':''}>${esc(v.name)}</option>`).join('')}</select></div></div>
   <h3 style="margin:6px 2px 10px">${esc(wrapFor)}'s breakdown</h3>${cards.map(story).join('')}
-  <h3 style="margin:18px 2px 10px">The group awards</h3>${group.map(story).join('')}`;
+  <h3 style="margin:18px 2px 10px">The group awards</h3>${group.map(story).join('')}
+  <div class="card" style="margin-top:18px"><h3>Take your list with you</h3>
+  <div class="mut" style="margin-bottom:10px">Copy ${esc(wrapFor)}'s upvoted songs as a list of titles and YouTube links, to paste into a note or build your own playlist.</div>
+  <button class="btn" data-act="copyliked">Copy liked + super liked (${Object.values(p.v).filter(c=>c>0).length})</button> <button class="btn" data-act="copysuper">Copy super liked only (${Object.values(p.v).filter(c=>c===2).length})</button>
+  <div id="copybox"></div></div>`;
 }
 
 /* ---------- test mode helpers ---------- */
@@ -636,6 +640,11 @@ document.addEventListener('click',async e=>{
   }
   else if(a==='copylist')copyText(window.__copyList||'');
   else if(a==='copylinks')copyText(window.__copyLinks||'');
+  else if(a==='copyliked'||a==='copysuper'){
+    const p=voters().find(v=>v.name===wrapFor);if(!p)return;
+    const ids=Object.entries(p.v).filter(([id,c])=>BYID.has(id)&&(a==='copysuper'?c===2:c>0)).sort((x,y)=>y[1]-x[1]).map(([id])=>id);
+    copyText(ids.map(id=>BYID.get(id)[1]+'  '+ytUrl(id)).join('\n'));
+  }
   else if(a==='toggletest'){testMode=!testMode;lsSet('pv_testmode_'+me.name,testMode?'1':'0');playing=false;undoStack=[];if(!testMode)try{await loadVotes()}catch(x){}setStatus(testMode?'test mode: not counted':'');render()}
   else if(a==='fill'&&testMode){let n=0;for(const id of order){if(n>=50)break;if(id in testMine)continue;const x=Math.random();testMine[id]=x<0.06&&usedSupers()<SUPER_LIMIT?2:x<0.45?1:x<0.75?-1:0;n++}saveTest();render()}
   else if(a==='fakes'&&testMode){makeFakes();render()}
