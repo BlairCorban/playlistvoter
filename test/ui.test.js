@@ -161,6 +161,20 @@ async function login(w, name, pw) {
   d.querySelector('[data-tab=vote]').click(); await sleep(30);
   assert.ok(d.querySelector('#app').textContent.includes('Voting is closed')); ok('voting disabled after close');
 
+  // lone upvotes / lone downvotes / everyone-said-yes are all listed in full
+  {
+    const w = d.defaultView, ids = SONGS.map((s) => s[0]);
+    const mk = (name, f) => { const v = {}; ids.slice(0, 60).forEach((id, i) => { v[id] = f(i); }); return { name, v }; };
+    const A = mk('A', (i) => (i < 40 ? 1 : i < 50 ? -1 : 1));
+    const B = mk('B', (i) => (i < 40 ? -1 : 1)), C = mk('C', (i) => (i < 40 ? -1 : 1)), D = mk('D', (i) => (i < 40 ? -1 : 1));
+    const vs = [A, B, C, D], cards = w.wrappedFor(vs, A, w.personStats(vs), w.agreement(vs));
+    const lone = cards.find((c) => c.title === 'Only you liked these'), hated = cards.find((c) => c.title === 'Only you hated these');
+    assert.strictEqual((lone.body.match(/class="song"/g) || []).length, 40); ok('all 40 songs only you liked are listed');
+    assert.strictEqual((hated.body.match(/class="song"/g) || []).length, 10); ok('all 10 songs only you hated are listed');
+    const group = w.groupAwards(vs, w.personStats(vs), w.agreement(vs)).find((c) => c.title === 'Everyone said yes');
+    assert.strictEqual((group.body.match(/class="song"/g) || []).length, 10); ok('every song everyone said yes to is listed');
+  }
+
   d.querySelector('#outbtn').click(); await sleep(100);
   assert.ok(d.querySelector('#app').textContent.includes('Sign in')); ok('sign out');
   console.log('UI tests passed:', n); process.exit(0);

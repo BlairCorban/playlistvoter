@@ -63,6 +63,7 @@ th,td{padding:6px 6px;border-top:1px solid var(--line);text-align:left;vertical-
 .story .em{font-size:34px}
 .story h2{margin:6px 0 8px;font-size:22px}
 .story p{margin:6px 0;font-size:16px}
+.scrolllist{max-height:380px;overflow:auto;padding-right:4px}
 .story .song{display:block;margin:4px 0;padding:6px 10px;background:rgba(255,255,255,.07);border-radius:8px;font-size:14px}
 .spark{display:flex;align-items:flex-end;gap:2px;height:44px;min-width:140px}
 .spark i{flex:1;background:var(--down);min-height:2px;border-radius:2px 2px 0 0;opacity:.9}
@@ -474,7 +475,10 @@ function wrappedFor(vs,p,ps,pairs){
   }
   /* lone supporter */
   const lone=Object.entries(p.v).filter(([id,c])=>c>0).map(([id,c])=>({id,c,o:others(vs,p,id)})).filter(x=>x.o.cast>=3&&x.o.pos===0).sort((a,b)=>b.c-a.c||b.o.down-a.o.down);
-  if(lone.length)cards.push({em:'🦄',title:'Only you liked these',body:`<p>${lone.length===1?'This one was':'These were'} the only song${lone.length===1?'':'s'} you rated up while every other voter on ${lone.length===1?'it':'them'} said no.</p>${lone.slice(0,5).map(x=>songLine(x.id,(x.c===2?'⭐ super · ':'')+x.o.down+' downvotes from the others')).join('')}`});
+  if(lone.length)cards.push({em:'🦄',title:'Only you liked these',body:`<p>${lone.length===1?'This one was':'These were'} the only song${lone.length===1?'':'s'} you rated up while every other voter on ${lone.length===1?'it':'them'} said no.</p><div class="scrolllist">${lone.map(x=>songLine(x.id,(x.c===2?'⭐ super · ':'')+x.o.down+' downvotes from the others')).join('')}</div>`});
+  /* lone downvoter */
+  const loneDown=Object.entries(p.v).filter(([id,c])=>c===-1).map(([id])=>({id,o:others(vs,p,id)})).filter(x=>x.o.cast>=3&&x.o.down===0).sort((a,b)=>b.o.pos-a.o.pos);
+  if(loneDown.length)cards.push({em:'🙊',title:'Only you hated these',body:`<p>${loneDown.length===1?'This one was':'These '+loneDown.length+' were'} the only song${loneDown.length===1?'':'s'} you downvoted while every other voter on ${loneDown.length===1?'it':'them'} liked ${loneDown.length===1?'it':'them'}.</p><div class="scrolllist">${loneDown.map(x=>songLine(x.id,x.o.pos+' upvotes from the others')).join('')}</div>`});
   /* artists against the room */
   const at=artistTable(vs,p);
   const hate=at.filter(o=>o.me.n>=2&&o.ot.n>=4&&o.me.sum/o.me.n<=-0.5&&o.ot.sum/o.ot.n>=0.3).sort((a,b)=>(b.ot.sum/b.ot.n-b.me.sum/b.me.n)-(a.ot.sum/a.ot.n-a.me.sum/a.me.n));
@@ -508,7 +512,10 @@ function groupAwards(vs,ps,pairs){
   const fight=arr.filter(a=>a.pos>=2&&a.down>=2).sort((a,b)=>Math.min(b.pos,b.down)-Math.min(a.pos,a.down)||b.cast-a.cast)[0];
   const top=[...arr].sort((a,b)=>b.score-a.score||b.sup-a.sup)[0];
   if(top)cards.push({em:'🏆',title:'Song of the playlist',body:songLine(top.s[0],`score ${top.score}`)});
-  if(unan)cards.push({em:'🤝',title:'Everyone agreed',body:songLine(unan.s[0],`${unan.pos} up, 0 down`)});
+  const allYes=arr.filter(a=>vs.length>=2&&a.pos===vs.length).sort((a,b)=>b.sup-a.sup||a.s[1].localeCompare(b.s[1]));
+  const nearly=arr.filter(a=>a.cast>=minCast&&a.down===0&&a.pos<vs.length&&a.pos===a.cast).length;
+  if(allYes.length)cards.push({em:'🤝',title:'Everyone said yes',body:`<p>${allYes.length} song${allYes.length===1?'':'s'} where every one of the ${vs.length} voters voted up or super.${nearly?` ${nearly} more had no downvotes but at least one skip.`:''}</p><div class="scrolllist">${allYes.map(a=>songLine(a.s[0],a.sup?`⭐ ${a.sup} super`:'')).join('')}</div>`});
+  else if(unan)cards.push({em:'🤝',title:'Everyone agreed',body:`<p>Nobody got a yes from literally everyone, but this had no downvotes:</p>${songLine(unan.s[0],`${unan.pos} up, 0 down`)}`});
   if(fight)cards.push({em:'🥊',title:'Biggest argument',body:songLine(fight.s[0],`${fight.pos} up, ${fight.down} down`)});
   const pick=[...ps].sort((a,b)=>b.downRate-a.downRate)[0],gen=[...ps].sort((a,b)=>b.posRate-a.posRate)[0],skipper=[...ps].sort((a,b)=>b.skips-a.skips)[0];
   cards.push({em:'🧐',title:'Pickiest voter',body:`<p><b>${esc(pick.name)}</b> downvoted ${Math.round(pick.downRate*100)}% of the songs they voted on.</p>`});
