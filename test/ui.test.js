@@ -142,6 +142,7 @@ async function login(w, name, pw) {
   d.querySelector('[data-tab=vote]').click(); await sleep(30);
   d.querySelector('[data-tab=stats]').click(); await sleep(300);
   assert.ok(d.querySelector('#app').textContent.includes('Not counted') && d.querySelector('#app').textContent.includes('Jack')); ok('unfinished voters are listed as not counted');
+  { const rows = [...d.querySelectorAll('table tr')].map((r) => r.textContent); assert.ok(rows.some((r) => r.startsWith('Chad')) && rows.some((r) => r.startsWith('Blair'))); ok('voters progress table includes unfinished people'); }
   d.querySelector('[data-tab=stats]').click(); await sleep(200);
   let st = d.querySelector('#app').textContent;
   assert.ok(st.includes('Pickiness over time') && st.includes('Got pickier')); ok('stats show pickiness over time and detect Blair got pickier');

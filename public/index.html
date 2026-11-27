@@ -169,10 +169,18 @@ function voters(){
   const list=allVotes.map(x=>x.name===me.name?{name:x.name,v:mine}:x);
   /* only people who have voted on (or skipped) at least 90% of the songs count towards anything */
   const cnt=x=>Object.keys(x.v).filter(id=>BYID.has(id)).length,need=minDone();
+  everyone=list.filter(x=>Object.keys(x.v).length);
   excluded=list.filter(x=>cnt(x)<need).map(x=>({name:x.name,n:cnt(x)}));
   return list.filter(x=>cnt(x)>=need);
 }
-let excluded=[];
+let excluded=[],everyone=[];
+function votersTable(){
+  const all=everyone.length?everyone:[];const ps=personStats(all);
+  return `<div class="card"><h3>The voters</h3>
+   <table><tr><th>Name</th><th>Done</th><th>Mix</th><th>Down rate</th><th>⭐ used</th></tr>
+   ${ps.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.total}/${SONGS.length}<div class="mut">${Math.round(x.total/SONGS.length*100)}%</div></td><td>${mixBar(x.p)}</td><td>${Math.round(x.downRate*100)}%</td><td>${x.sup}/${SUPER_LIMIT}</td></tr>`).join('')}</table>
+   <div class="mut" style="margin-top:6px">Everyone is shown here so you can see progress. Everything else only counts people who have voted on at least 90% of the songs. Mix bar: gold = super, green = up, grey = skip, red = down. Down rate ignores skips.</div></div>`;
+}
 function minDone(){return Math.ceil(SONGS.length*0.9)}
 function incompleteNote(){
   if(testMode||!excluded.length)return '';
@@ -404,7 +412,7 @@ function pickinessCard(vs){
 }
 function renderStats(){
   const vs=voters();
-  if(!vs.length){$('#app').innerHTML='<div class="card">No stats yet. They only include people who have voted on at least 90% of the songs, and nobody has got there yet.</div>';return}
+  if(!vs.length){$('#app').innerHTML='<div class="card">No stats yet. They only include people who have voted on at least 90% of the songs, and nobody has got there yet.</div>'+votersTable();return}
   const m=aggregate(vs),arr=[...m.values()];
   const totalCast=vs.reduce((t,p)=>t+Object.keys(p.v).length,0);
   const byScore=[...arr].sort((a,b)=>b.score-a.score||b.sup-a.sup);
@@ -434,10 +442,7 @@ function renderStats(){
   <div class="card"><h3>Super liked, but 3+ downvotes</h3><div class="mut">Someone spent a super on it and at least three people downvoted it.</div><div class="scrolllist">${songRows(arr.filter(a=>a.sup>=1&&a.down>=3).sort((a,b)=>b.down-a.down||b.sup-a.sup),a=>pill(a)+`<div class="mut">⭐ from ${vs.filter(p=>p.v[a.s[0]]===2).map(p=>esc(p.name)).join(', ')}</div>`)}</div></div>
   <div class="card"><h3>Most divisive</h3><div class="mut">Plenty of love and plenty of hate.</div>${songRows(divisive,a=>pill(a))}</div>
   <div class="card"><h3>Nobody wants these</h3><div class="mut">At least ${minCast} votes and no upvotes.</div>${songRows(hated,a=>pill(a))}</div>
-  <div class="card"><h3>The voters</h3>
-   <table><tr><th>Name</th><th>Done</th><th>Mix</th><th>Down rate</th><th>⭐ used</th></tr>
-   ${ps.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.total}/${SONGS.length}</td><td>${mixBar(x.p)}</td><td>${Math.round(x.downRate*100)}%</td><td>${x.sup}/${SUPER_LIMIT}</td></tr>`).join('')}</table>
-   <div class="mut" style="margin-top:6px">Mix bar: gold = super, green = up, grey = skip, red = down. Down rate ignores skips.</div></div>
+  ${votersTable()}
   ${pickinessCard(vs)}
   ${pairs.length?`<div class="card"><h3>Taste twins and opposites</h3><div class="mut">How often two people vote the same way, on songs they both voted on (up and super count as the same).</div>
    <div style="margin-top:8px"><b>Most alike</b></div>${pairs.slice(0,3).map(x=>`<div class="row"><div class="t">${esc(x.a.name)} + ${esc(x.b.name)}</div><b>${Math.round(x.pct*100)}%</b><span class="mut">${x.n} songs</span></div>`).join('')}
